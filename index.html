@@ -315,9 +315,8 @@ select.input{cursor:pointer;}
   .nav-tab{font-size:8px;}
 }
 </style>
-<script type="module">
-// Firebase will be initialized here
-</script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 </head>
 <body>
 <div class="app">
@@ -344,6 +343,7 @@ select.input{cursor:pointer;}
     <button class="nav-tab" onclick="nav('week',this)">Week</button>
     <button class="nav-tab" onclick="nav('fitness',this)">Fitness</button>
     <button class="nav-tab" onclick="nav('devotional',this)">Devotional</button>
+    <button class="nav-tab" onclick="nav('journal',this)">Journal</button>
   </nav>
 
   <!-- ══ TODAY ══ -->
@@ -648,6 +648,34 @@ select.input{cursor:pointer;}
 
 </div>
 
+
+  <!-- ══ JOURNAL ══ -->
+  <div id="page-journal" class="page">
+    <div style="margin-bottom:24px;">
+      <div class="display">Journal</div>
+      <div style="font-size:13px;color:var(--ink3);margin-top:4px;">Everything you've written — reflections, brain dumps, devotionals — in one timeline</div>
+    </div>
+
+    <!-- SEARCH -->
+    <div style="display:flex;gap:8px;margin-bottom:20px;">
+      <input class="input" id="journal-search" placeholder="Search your journal..." oninput="renderJournal()" style="flex:1;"/>
+      <select class="input" id="journal-filter" onchange="renderJournal()" style="width:140px;">
+        <option value="all">All entries</option>
+        <option value="reflect">Reflections</option>
+        <option value="brain">Brain dumps</option>
+        <option value="review">Daily reviews</option>
+        <option value="weekly">Weekly reviews</option>
+        <option value="devotional">Devotionals</option>
+      </select>
+    </div>
+
+    <div id="journal-list"></div>
+    <div id="journal-empty" style="text-align:center;padding:40px 0;color:var(--ink4);display:none;">
+      <div style="font-size:18px;margin-bottom:8px;">Nothing yet.</div>
+      <div style="font-size:13px;">Start writing in Today, Reflect, or Devotional and it will appear here.</div>
+    </div>
+  </div>
+
 <!-- ══ HABIT MODAL ══ -->
 <div class="overlay" id="habit-modal">
   <div class="modal">
@@ -842,13 +870,9 @@ const USER_PATH = 'users/parker/data/state';
 
 async function initFirebase() {
   try {
-    const { initializeApp } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js');
-    const { getFirestore, doc, getDoc, setDoc } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
-    const app = initializeApp(FIREBASE_CONFIG);
-    db = getFirestore(app);
-    window._fbDoc = doc(db, USER_PATH);
-    window._fbSetDoc = setDoc;
-    window._fbGetDoc = getDoc;
+    const app = firebase.initializeApp(FIREBASE_CONFIG);
+    db = firebase.firestore();
+    window._fbDb = db;
     fbInitialized = true;
     console.log('Firebase ready');
   } catch(e) {
@@ -865,7 +889,7 @@ async function save() {
   saveTimer = setTimeout(async () => {
     if(!fbInitialized || !window._fbDoc) return;
     try {
-      await window._fbSetDoc(window._fbDoc, {data: JSON.stringify(S)}, {merge: true});
+      await window._fbDb.doc(USER_PATH).set({data: JSON.stringify(S)}, {merge: true});
     } catch(e) { console.warn('Firebase save failed:', e); }
   }, 800);
 }
@@ -873,8 +897,8 @@ async function save() {
 async function loadFromFirebase() {
   if(!fbInitialized || !window._fbDoc) return false;
   try {
-    const snap = await window._fbGetDoc(window._fbDoc);
-    if(snap.exists()) {
+    const snap = await window._fbDb.doc(USER_PATH).get();
+    if(snap.exists) {
       const parsed = JSON.parse(snap.data().data);
       S = parsed;
       return true;
@@ -1029,8 +1053,8 @@ function renderToday() {
           <div class="habit-info">
             <div class="habit-name">${h.name}</div>
             <div class="habit-meta">
-              ${streak>0?`<div class="habit-streak"><span style="font-size:14px;">🔥</span>${streak}d streak</div>`:''}
-              ${h.domain?`<div class="habit-domain-tag">${DOMAINS.find(d=>d.id===h.domain)?.name||h.domain}</div>`:''}
+              ${streak>0?'<div class="habit-streak"><span style="font-size:14px;">🔥</span>'+streak+'d streak</div>':''}
+              ${h.domain?'<div class="habit-domain-tag">'+(DOMAINS.find(d=>d.id===h.domain)?.name||h.domain)+'</div>':''}
             </div>
           </div>
         </div>
@@ -1074,6 +1098,7 @@ function nextPrompt() {
 function renderBig3(containerId, arr, type) {
   const wrap = document.getElementById(containerId);
   if(!wrap) return;
+  if(!arr) return;
   wrap.innerHTML = '';
   arr.forEach((item,i)=>{
     const div = document.createElement('div');
@@ -1148,9 +1173,9 @@ function renderHabitsPage() {
         <div class="habit-info">
           <div class="habit-name">${h.name}</div>
           <div class="habit-meta">
-            ${streak>0?`<div class="habit-streak"><span style="font-size:14px;">🔥</span>${streak}d streak</div>`:'<div style="font-size:12px;color:var(--ink4);">No streak yet</div>'}
-            ${h.domain?`<div class="habit-domain-tag">${DOMAINS.find(d=>d.id===h.domain)?.name||''}</div>`:''}
-            ${h.goalId?`<div class="habit-domain-tag" style="border-color:${domainColor};color:${domainColor};">↳ ${(S.goals.find(g=>g.id===h.goalId)||{}).title||'Goal'}</div>`:''}
+            ${streak>0?'<div class="habit-streak"><span style="font-size:14px;">🔥</span>'+streak+'d streak</div>':'<div style="font-size:12px;color:var(--ink4);">No streak yet</div>'}
+            ${h.domain?'<div class="habit-domain-tag">'+(DOMAINS.find(d=>d.id===h.domain)?.name||'')+'</div>':''}
+            ${h.goalId?'<div class="habit-domain-tag" style="border-color:'+domainColor+';color:'+domainColor+';">↳ '+((S.goals.find(g=>g.id===h.goalId)||{}).title||'Goal')+'</div>':''}
           </div>
         </div>
         <div class="habit-actions-row">
@@ -1158,7 +1183,7 @@ function renderHabitsPage() {
           <button class="btn sm danger" onclick="deleteHabit('${h.id}')">Delete</button>
         </div>
       </div>
-      ${h.why?`<div style="font-size:12px;color:var(--ink3);font-style:italic;padding-left:38px;margin-bottom:12px;line-height:1.5;">${h.why}</div>`:''}
+      ${h.why?'<div style="font-size:12px;color:var(--ink3);font-style:italic;padding-left:38px;margin-bottom:12px;line-height:1.5;">'+h.why+'</div>':''}
       <div style="padding-left:0;">
         <div class="label" style="margin-bottom:8px;">This week</div>
         <div class="week-grid">${weekGrid}</div>
@@ -1261,28 +1286,20 @@ function buildGoalCard(g, dom) {
 
   const smarterHTML=smarter.length?`
     <div class="goal-smarter">
-      ${smarter.map(s=>`
-        <div class="smarter-item">
-          <div class="smarter-label">${s.l} — ${s.label}</div>
-          <div class="smarter-val">${s.val}</div>
-        </div>`).join('')}
+      ${smarter.map(s=>'<div class="smarter-item"><div class="smarter-label">'+s.l+' — '+s.label+'</div><div class="smarter-val">'+s.val+'</div></div>').join('')}
     </div>`:'';
 
   const msHTML=milestones.length?`
     <div style="margin-bottom:14px;">
       <div class="label" style="margin-bottom:8px;">Milestones <span style="color:var(--ink2);font-weight:500;">${msDone}/${milestones.length}</span></div>
-      ${milestones.map((m,i)=>`
-        <div class="milestone-row${m.done?' ms-done':''}">
-          <div class="milestone-check" onclick="toggleMilestone('${g.id}',${i})">${m.done?'✓':''}</div>
-          <div class="milestone-text">${m.text}</div>
-        </div>`).join('')}
+      ${milestones.map((m,i)=>'<div class="milestone-row'+(m.done?' ms-done':'')+'"><div class="milestone-check" onclick="toggleMilestone(\''+g.id+'\','+i+')">'+( m.done?'✓':'')+'</div><div class="milestone-text">'+m.text+'</div></div>').join('')}
     </div>`:'';
 
   card.innerHTML=`
     <div class="goal-header">
       <div class="goal-title-text">${g.title}</div>
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:5px;flex-shrink:0;">
-        ${daysLeft!==null?`<div style="font-family:'DM Mono',monospace;font-size:10px;color:${daysLeft<14?'var(--red)':'var(--ink3)'};">${daysLeft>0?daysLeft+'d left':'overdue'}</div>`:''}
+        ${daysLeft!==null?'<div style="font-family:\'DM Mono\',monospace;font-size:10px;color:'+(daysLeft<14?'var(--red)':'var(--ink3)')+';">'+(daysLeft>0?daysLeft+'d left':'overdue')+'</div>':''}
         <div style="display:flex;gap:6px;">
           <button class="btn sm" onclick="openGoalModal('${g.id}')">Edit</button>
           <button class="btn sm danger" onclick="deleteGoal('${g.id}')">Delete</button>
@@ -1291,8 +1308,8 @@ function buildGoalCard(g, dom) {
     </div>
     <div class="goal-badges">
       <div class="badge domain" style="background:${dom.color};">${dom.name}</div>
-      ${g.date?`<div class="badge">${new Date(g.date).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}</div>`:''}
-      ${milestones.length?`<div class="badge">${msDone}/${milestones.length} milestones</div>`:''}
+      ${g.date?'<div class="badge">'+ new Date(g.date).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})+'</div>':''}
+      ${milestones.length?'<div class="badge">'+msDone+'/'+milestones.length+' milestones</div>':''}
     </div>
     <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
     <div class="progress-row">
@@ -1481,7 +1498,7 @@ function renderWeek() {
       </div>
       <textarea class="input" style="width:100%;" placeholder="Your reflection..." id="wr-${i}">${S.weeklyReview[wk]?.[i]||''}</textarea>
     `;
-    wrap.appendChild(div);
+    wkWrap.appendChild(div);
     setTimeout(()=>{
       const ta=document.getElementById(`wr-${i}`);
       if(ta){ta.oninput=function(){if(!S.weeklyReview[wk])S.weeklyReview[wk]={};S.weeklyReview[wk][i]=this.value;save();};}
@@ -1490,7 +1507,7 @@ function renderWeek() {
 }
 
 // ══ RENDER MAP ══
-const renders={today:renderToday,habits:renderHabitsPage,goals:renderGoalsPage,reflect:renderReflect,week:renderWeek,fitness:renderFitness,devotional:renderDevotional};
+const renders={today:renderToday,habits:renderHabitsPage,goals:renderGoalsPage,reflect:renderReflect,week:renderWeek,fitness:renderFitness,devotional:renderDevotional,journal:renderJournal};
 
 // ══ HELPER: SELECTS ══
 function populateDomainSelect(id) {
@@ -1518,7 +1535,7 @@ async function brainDumpAI(){
   wrap.style.display='block'; el.className='ai-text loading'; el.textContent='Reading your brain dump...';
   const b3=S.dailyBig3[todayKey()].map((x,i)=>`${i+1}. ${x.t||'(blank)'} [${x.done?'done':'not done'}]`).join(', ');
   const goals=S.goals.slice(0,5).map(g=>`${g.title} (${g.progress||0}%)`).join('; ');
-  const prompt=`You are a productivity coach for Parker Nelson — Christian, enterprise AE at Workday in Frisco TX, dad, in a deliberate building season. He uses Michael Hyatt and Stephen Covey frameworks.\n\nHis Daily Big 3: ${b3}.\n${goals?`Active goals: ${goals}`:''}.\n\nBrain dump:\n"${dump}"\n\nYour job:\n1. Quickly categorize what's in the dump (tasks, worries, ideas, decisions, noise)\n2. Identify the 1–2 most important things needing action\n3. Flag what can be deleted, delegated, or deferred\n4. Give 2–3 sharp, concrete next actions\n5. Note anything that conflicts with or belongs in his Big 3\n\nBe direct, warm, concise. Use Hyatt/Covey language naturally. Write in short paragraphs, not bullet soup.`;
+  const prompt=`You are a productivity coach for Parker Nelson — Christian, enterprise AE at Workday in Frisco TX, dad, in a deliberate building season. He uses Michael Hyatt and Stephen Covey frameworks.\n\nHis Daily Big 3: ${b3}.\n${goals?'Active goals: '+goals:''}.\n\nBrain dump:\n"${dump}"\n\nYour job:\n1. Quickly categorize what's in the dump (tasks, worries, ideas, decisions, noise)\n2. Identify the 1–2 most important things needing action\n3. Flag what can be deleted, delegated, or deferred\n4. Give 2–3 sharp, concrete next actions\n5. Note anything that conflicts with or belongs in his Big 3\n\nBe direct, warm, concise. Use Hyatt/Covey language naturally. Write in short paragraphs, not bullet soup.`;
   await callClaude(prompt, el);
 }
 
@@ -1718,7 +1735,7 @@ function showCalDrawer(key) {
       <div>
         <div style="font-size:14px;font-weight:600;color:var(--ink);margin-bottom:3px;">${w.muscle}</div>
         <div class="workout-feel" style="margin:0;">${FEEL_EMOJI[w.feel]||''} ${w.feel}</div>
-        ${w.notes?`<div style="font-size:12px;color:var(--ink3);font-style:italic;margin-top:5px;">${w.notes}</div>`:''}
+        ${w.notes?'<div style="font-size:12px;color:var(--ink3);font-style:italic;margin-top:5px;">'+w.notes+'</div>':''}
       </div>
       <button class="btn sm danger" onclick="deleteWorkoutByTs(${w.ts})">Delete</button>
     </div>`).join('') : '<div style="font-size:13px;color:var(--ink3);">No workout logged.</div>';
@@ -1797,7 +1814,7 @@ function renderFitness() {
           <div>
             <div class="workout-muscle">${w.muscle}</div>
             <div class="workout-feel">${FEEL_EMOJI[w.feel]||''} ${w.feel}</div>
-            ${w.notes?`<div style="font-size:12px;color:var(--ink3);margin-top:8px;font-style:italic;line-height:1.5;">${w.notes}</div>`:''}
+            ${w.notes?'<div style="font-size:12px;color:var(--ink3);margin-top:8px;font-style:italic;line-height:1.5;">'+w.notes+'</div>':''}
           </div>
           <div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px;">
             <div class="workout-date">${w.date}</div>
@@ -2009,7 +2026,7 @@ function displayDevotional(d) {
   const dswEl=document.getElementById('dev-scripture-wrap'); if(!dswEl) return; dswEl.innerHTML = `
     <div class="scripture-block">${d.scripture}</div>
     <div class="scripture-ref">${d.reference} (NLT)</div>
-    ${d.context?`<div style="font-size:13px;color:var(--ink3);margin-top:10px;line-height:1.6;">${d.context}</div>`:''}
+    ${d.context?'<div style="font-size:13px;color:var(--ink3);margin-top:10px;line-height:1.6;">'+d.context+'</div>':''}
   `;
   document.getElementById('dev-q1').textContent = d.q1||'';
   document.getElementById('dev-q2').textContent = d.q2||'';
@@ -2115,28 +2132,17 @@ async function submitDevotional() {
   feedbackEl.className='ai-text loading';
   feedbackEl.textContent='Reflecting on your responses...';
 
-  const prompt = `const feedGoals = S.goals.slice(0,4).map(g=>`${g.title} (${g.progress||0}%)`).join(', ') || 'none set';
+  const feedGoals = S.goals.slice(0,4).map(g=>g.title+' ('+(g.progress||0)+'%)').join(', ') || 'none set';
   const feedHabits = S.habits.slice(0,5).map(h=>h.name).join(', ') || 'none set';
-  const feedPromptBase = `You are a thoughtful Christian devotional guide responding to Parker Nelson — enterprise AE at Workday in Frisco TX, husband, father, man of deep faith building intentionally. His active goals: ${feedGoals}. Daily habits he's building: ${feedHabits}.`;
-  const fPrompt = feedPromptBase + `
+  const prompt = 'You are a thoughtful Christian devotional guide responding to Parker Nelson — enterprise AE at Workday in Frisco TX, husband, father, man of deep faith building intentionally. His active goals: '+feedGoals+'. Daily habits: '+feedHabits+'.'
+    +'\n\nToday\'s scripture (NLT): '+d.reference+'\n"'+d.scripture+'"'
+    +'\n\nReflection questions and Parker\'s responses:'
+    +'\n\nQ1: '+d.q1+'\nA1: '+(a1||'(not answered)')
+    +'\n\nQ2: '+d.q2+'\nA2: '+(a2||'(not answered)')
+    +'\n\nQ3: '+d.q3+'\nA3: '+(a3||'(not answered)')
+    +'\n\nWrite a warm, pastoral 3-4 paragraph devotional response. Affirm what rings true in his reflections. Offer spiritual insight or a gentle challenge where there is room to grow. Close with a prayer prompt or one-sentence blessing. Tone: like a trusted pastor who knows him well - encouraging, grounded in scripture, never preachy.';
 
-Today's scripture (NLT): ${d.reference}
-"${d.scripture}"
-
-Reflection questions and Parker's responses:
-
-Q1: ${d.q1}
-A1: ${a1||'(not answered)'}
-
-Q2: ${d.q2}
-A2: ${a2||'(not answered)'}
-
-Q3: ${d.q3}
-A3: ${a3||'(not answered)'}
-
-Write a warm, pastoral 3–4 paragraph devotional response. Affirm what rings true in his reflections. Offer spiritual insight or a gentle challenge where there is room to grow. Close with a prayer prompt or one-sentence blessing. Tone: like a trusted pastor who knows him well — encouraging, grounded in scripture, never preachy.`;
-
-  try {
+    try {
     const res = await fetch('https://api.anthropic.com/v1/messages',{
       method:'POST', headers:getAPIHeaders(),
       body: JSON.stringify({model:'claude-sonnet-4-5',max_tokens:1000,messages:[{role:'user',content:prompt}]})
@@ -2156,13 +2162,7 @@ function renderDevHistory() {
   if(!wrap) return;
   const entries = Object.entries(S.devotionals||{}).sort((a,b)=>b[0].localeCompare(a[0])).slice(1,8);
   if(!entries.length){ wrap.innerHTML='<div style="color:var(--ink4);font-size:13px;">Past devotionals will appear here.</div>'; return; }
-  wrap.innerHTML = entries.map(([date,d])=>`
-    <div class="dev-history-item" onclick="viewPastDevotional('${date}')">
-      <div class="dev-history-date">${date}</div>
-      <div class="dev-history-ref">${d.reference||'—'}</div>
-      ${d.feedback?'<div style="font-size:11px;color:var(--green);margin-top:3px;">✓ Feedback received</div>':''}
-    </div>
-  `).join('');
+  wrap.innerHTML = entries.map(([date,d])=>'<div class="dev-history-item" onclick="viewPastDevotional(\''+date+'\')">'+'<div class="dev-history-date">'+date+'</div>'+'<div class="dev-history-ref">'+(d.reference||'—')+'</div>'+(d.feedback?'<div style="font-size:11px;color:var(--green);margin-top:3px;">✓ Feedback received</div>':'')+'</div>').join('');
 }
 
 function viewPastDevotional(date) {
@@ -2179,6 +2179,91 @@ function viewPastDevotional(date) {
   alert(parts.filter(Boolean).join("\n\n"));
 }
 
+
+
+// ══ JOURNAL ══
+function renderJournal() {
+  const list = document.getElementById('journal-list');
+  const empty = document.getElementById('journal-empty');
+  if(!list) return;
+
+  const search = (document.getElementById('journal-search')?.value||'').toLowerCase();
+  const filter = document.getElementById('journal-filter')?.value||'all';
+
+  const entries = [];
+  const today = todayKey();
+
+  // Brain dumps
+  if(filter==='all'||filter==='brain') {
+    Object.entries(S.brainDump||{}).forEach(([date, text]) => {
+      if(text&&text.trim()) entries.push({date, type:'brain', label:'Brain dump', color:'var(--ink3)', text: text.trim()});
+    });
+  }
+
+  // Daily reflections
+  if(filter==='all'||filter==='reflect') {
+    Object.entries(S.dailyReflect||{}).forEach(([date, text]) => {
+      if(text&&text.trim()) entries.push({date, type:'reflect', label:'Reflection', color:'var(--gold)', text: text.trim()});
+    });
+  }
+
+  // Daily reviews
+  if(filter==='all'||filter==='review') {
+    Object.entries(S.dailyReview||{}).forEach(([date, answers]) => {
+      const text = Object.values(answers).filter(Boolean).join(' | ');
+      if(text.trim()) entries.push({date, type:'review', label:'Daily review', color:'var(--green)', text: text.trim()});
+    });
+  }
+
+  // Weekly reviews
+  if(filter==='all'||filter==='weekly') {
+    Object.entries(S.weeklyReview||{}).forEach(([wk, answers]) => {
+      const text = Object.values(answers).filter(Boolean).join(' | ');
+      if(text.trim()) {
+        const wkStr = wk.replace('w',''); const date = wkStr.slice(0,4)+'-'+wkStr.slice(4,6)+'-'+wkStr.slice(6,8);
+        entries.push({date, type:'weekly', label:'Weekly review', color:'#1a5276', text: text.trim()});
+      }
+    });
+  }
+
+  // Devotionals
+  if(filter==='all'||filter==='devotional') {
+    Object.entries(S.devotionals||{}).forEach(([date, d]) => {
+      const text = [d.a1, d.a2, d.a3].filter(Boolean).join(' | ');
+      if(text.trim()) entries.push({date, type:'devotional', label: d.reference||'Devotional', color:'var(--gold)', text: text.trim(), scripture: d.scripture});
+    });
+  }
+
+  // Sort newest first
+  entries.sort((a,b) => b.date.localeCompare(a.date));
+
+  // Filter by search
+  const filtered = search ? entries.filter(e => 
+    e.text.toLowerCase().includes(search) || 
+    e.label.toLowerCase().includes(search) ||
+    e.date.includes(search)
+  ) : entries;
+
+  if(!filtered.length) {
+    list.innerHTML=''; empty.style.display='block'; return;
+  }
+  empty.style.display='none';
+
+  list.innerHTML = filtered.map(e => {
+    const preview = e.text.length > 200 ? e.text.slice(0,200)+'...' : e.text;
+    const d = new Date(e.date+'T12:00:00');
+    const dateStr = d.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric',year:'numeric'});
+    const scriptureHtml = e.scripture ? '<div style="font-size:12px;color:var(--gold);font-style:italic;margin-bottom:6px;">'+e.scripture.slice(0,100)+'...</div>' : '';
+    return '<div class="card" style="margin-bottom:12px;border-left:3px solid '+e.color+';">'
+      +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">'
+      +'<span style="font-family:\'DM Mono\',monospace;font-size:9px;letter-spacing:1px;text-transform:uppercase;color:'+e.color+';">'+e.label+'</span>'
+      +'<span style="font-family:\'DM Mono\',monospace;font-size:10px;color:var(--ink4);">'+dateStr+'</span>'
+      +'</div>'
+      +scriptureHtml
+      +'<div style="font-size:13px;color:var(--ink2);line-height:1.65;">'+preview+'</div>'
+      +'</div>';
+  }).join('');
+}
 
 // ══ EXPORT / IMPORT ══
 function exportData() {
@@ -2318,17 +2403,43 @@ Be direct, warm, specific to HIS actual data. Write in short paragraphs. No gene
 
 // ══ INIT ══
 (async function() {
-  // Show loading state
-  document.getElementById('today-greeting').textContent = 'Loading...';
-  
+  // Synchronously initialize all state from localStorage first
+  try { const r=localStorage.getItem('lifeos_v3'); if(r) { const p=JSON.parse(r); Object.assign(S,p); } } catch(e) {}
+  if(!S.habits) S.habits = [];
+  if(!S.goals) S.goals = [];
+  if(!S.dailyBig3) S.dailyBig3 = {};
+  if(!S.weeklyBig3) S.weeklyBig3 = {};
+  if(!S.habitLog) S.habitLog = {};
+  if(!S.brainDump) S.brainDump = {};
+  if(!S.dailyReflect) S.dailyReflect = {};
+  if(!S.dailyReview) S.dailyReview = {};
+  if(!S.weeklyReview) S.weeklyReview = {};
+  if(!S.promptIdx) S.promptIdx = {};
+  if(!S.milestones) S.milestones = {};
+  if(!S.dayPlan) S.dayPlan = {};
+  if(!S.macros) S.macros = {};
+  if(!S.workouts) S.workouts = [];
+  if(!S.macroTargets) S.macroTargets = {cal:2800,protein:220,carbs:280,fat:80,water:128};
+  if(!S.devotionals) S.devotionals = {};
+  const _today = todayKey(), _wk = weekKey();
+  if(!S.dailyBig3[_today]) S.dailyBig3[_today] = [{t:'',done:false},{t:'',done:false},{t:'',done:false}];
+  if(!S.weeklyBig3[_wk]) S.weeklyBig3[_wk] = [{t:'',done:false},{t:'',done:false},{t:'',done:false}];
+  if(!S.dailyReview[_today]) S.dailyReview[_today] = {};
+  if(!S.weeklyReview[_wk]) S.weeklyReview[_wk] = {};
+
+  // Render immediately with local data
+  fitLoad();
+  devLoad();
+  renderToday();
+
   // Check API key
   checkAPIKey();
   
-  // Init Firebase
+  // Init Firebase in background
   await initFirebase();
   
-  // Load from localStorage immediately
-  load();
+  // Load from localStorage (full load with all defaults)
+  await load();
   fitLoad();
   devLoad();
   renderToday();
@@ -2337,7 +2448,7 @@ Be direct, warm, specific to HIS actual data. Write in short paragraphs. No gene
   if(fbInitialized) {
     const gotFirebase = await loadFromFirebase();
     if(gotFirebase) {
-      load(); // re-init defaults on top of Firebase data
+      await load(); // re-init defaults on top of Firebase data
       fitLoad();
       devLoad();
       renderToday();
