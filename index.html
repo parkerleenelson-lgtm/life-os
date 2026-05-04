@@ -537,6 +537,11 @@ select.input{cursor:pointer;}
       </div>
       <!-- PROGRESS BARS -->
       <div id="macro-bars"></div>
+      <!-- LOG DAY -->
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-top:16px;padding-top:14px;border-top:1px solid var(--border);">
+        <div id="macro-logged-status" style="font-size:13px;color:var(--ink3);"></div>
+        <button class="btn gold" id="log-day-btn" onclick="logDay()">Log day ✓</button>
+      </div>
     </div>
 
     <!-- TRAINING LOG -->
@@ -1635,9 +1640,11 @@ function renderFitnessCalendar() {
     if(isFuture) cls+=' future';
     if(hasW||hasM) cls+=' has-data';
     let dots = '';
+    const isLogged = S.macros[key]?.logged;
     if(hasW&&hasM) dots+=`<div class="cal-dot cal-dot-b"></div>`;
     else if(hasW) dots+=`<div class="cal-dot cal-dot-w"></div>`;
     else if(hasM) dots+=`<div class="cal-dot cal-dot-m"></div>`;
+    if(isLogged) dots+=`<div class="cal-dot" style="background:var(--gold);"></div>`;
     const macroMini = macroData&&(macroData.cal||macroData.protein) ? `<div class="cal-macro-mini">${macroData.cal||0}c ${macroData.protein||0}g</div>` : '';
     const ws = S.workouts.filter(w=>w.dateKey===key);
     const wLabel = ws.length ? `<div class="cal-macro-mini" style="color:var(--green);white-space:nowrap;overflow:hidden;">${ws.map(w=>w.muscle).join(', ')}</div>` : '';
@@ -1735,6 +1742,7 @@ function renderFitness() {
     if(el) el.value = m[k]||'';
   });
   renderMacroBars();
+  renderMacroLogStatus();
   renderFitnessCalendar();
 
   // Backfill missing timestamps on old workout records
@@ -1844,6 +1852,50 @@ function deleteWorkoutByTs(ts) {
     const key = drawer.dataset.key;
     if(key) showCalDrawer(key);
   }
+}
+
+
+// ══ LOG DAY ══
+function logDay() {
+  const today = todayKey();
+  if(!S.macros[today]) { alert('Enter your macros first.'); return; }
+  S.macros[today].logged = true;
+  S.macros[today].loggedAt = new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
+  save();
+  renderMacroLogStatus();
+  renderFitnessCalendar();
+}
+
+function renderMacroLogStatus() {
+  const today = todayKey();
+  const m = S.macros[today] || {};
+  const t = S.macroTargets;
+  const statusEl = document.getElementById('macro-logged-status');
+  const btnEl = document.getElementById('log-day-btn');
+  if(!statusEl || !btnEl) return;
+  if(m.logged) {
+    // Show summary
+    const calPct = Math.round((m.cal||0)/t.cal*100);
+    const proteinPct = Math.round((m.protein||0)/t.protein*100);
+    statusEl.innerHTML = `<span style="color:var(--green);font-weight:600;">✓ Logged at ${m.loggedAt}</span> &nbsp;·&nbsp; ${calPct}% cal &nbsp;·&nbsp; ${proteinPct}% protein`;
+    btnEl.textContent = 'Edit day';
+    btnEl.onclick = unlogDay;
+    btnEl.className = 'btn sm';
+  } else {
+    statusEl.textContent = '';
+    btnEl.textContent = 'Log day ✓';
+    btnEl.onclick = logDay;
+    btnEl.className = 'btn gold';
+  }
+}
+
+function unlogDay() {
+  const today = todayKey();
+  if(!S.macros[today]) return;
+  S.macros[today].logged = false;
+  save();
+  renderMacroLogStatus();
+  renderFitnessCalendar();
 }
 
 // ── FITNESS AI ──
