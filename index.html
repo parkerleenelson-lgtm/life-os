@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
 <title>Life OS — Parker Nelson</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
@@ -337,15 +338,15 @@ select.input{cursor:pointer;}
     </div>
   </div>
 
-  <nav class="nav">
-    <button class="nav-tab active" onclick="nav('today',this)">Today</button>
-    <button class="nav-tab" onclick="nav('habits',this)">Habits</button>
-    <button class="nav-tab" onclick="nav('goals',this)">Goals</button>
-    <button class="nav-tab" onclick="nav('reflect',this)">Reflect</button>
-    <button class="nav-tab" onclick="nav('week',this)">Week</button>
-    <button class="nav-tab" onclick="nav('fitness',this)">Fitness</button>
-    <button class="nav-tab" onclick="nav('devotional',this)">Devotional</button>
-    <button class="nav-tab" onclick="nav('journal',this)">Journal</button>
+  <nav class="nav" style="overflow-x:auto;-webkit-overflow-scrolling:touch;flex-wrap:nowrap;">
+    <button class="nav-tab active" onclick="nav('today',this)" style="flex-shrink:0;white-space:nowrap;">Today</button>
+    <button class="nav-tab" onclick="nav('habits',this)" style="flex-shrink:0;white-space:nowrap;">Habits</button>
+    <button class="nav-tab" onclick="nav('goals',this)" style="flex-shrink:0;white-space:nowrap;">Goals</button>
+    <button class="nav-tab" onclick="nav('reflect',this)" style="flex-shrink:0;white-space:nowrap;">Reflect</button>
+    <button class="nav-tab" onclick="nav('week',this)" style="flex-shrink:0;white-space:nowrap;">Week</button>
+    <button class="nav-tab" onclick="nav('fitness',this)" style="flex-shrink:0;white-space:nowrap;">Fitness</button>
+    <button class="nav-tab" onclick="nav('devotional',this)" style="flex-shrink:0;white-space:nowrap;">Devotional</button>
+    <button class="nav-tab" onclick="nav('journal',this)" style="flex-shrink:0;white-space:nowrap;">Journal</button>
   </nav>
 
   <!-- ══ TODAY ══ -->
