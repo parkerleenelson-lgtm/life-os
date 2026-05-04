@@ -1,0 +1,2170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Life OS — Parker Nelson</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --page:#f7f5f0;
+  --white:#ffffff;
+  --ink:#18160f;
+  --ink2:#3d3a30;
+  --ink3:#7a7568;
+  --ink4:#b8b3a8;
+  --ink5:#dedad4;
+  --border:#e6e1d8;
+  --border2:#cec9bf;
+  --gold:#9a7b2e;
+  --gold-lt:#f9f3e3;
+  --gold-md:#e8d5a0;
+  --green:#2a6644;
+  --green-lt:#eaf3ed;
+  --red:#8b2020;
+  --red-lt:#faeaea;
+  --surface:#f0ece4;
+  --radius:10px;
+  --radius-lg:14px;
+}
+html,body{background:var(--page);color:var(--ink);font-family:'DM Sans',sans-serif;font-size:15px;min-height:100vh;}
+.app{max-width:920px;margin:0 auto;padding:36px 24px 100px;}
+
+/* ── HEADER ── */
+.app-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:32px;padding-bottom:20px;border-bottom:1px solid var(--border);}
+.app-title{font-family:'DM Sans',sans-serif;font-size:22px;font-weight:600;letter-spacing:-0.2px;}
+.app-title em{color:var(--gold);font-style:normal;font-weight:300;}
+.app-date{font-family:'DM Mono',monospace;font-size:10px;color:var(--ink3);letter-spacing:0.8px;}
+
+/* ── NAV ── */
+.nav{display:flex;gap:2px;background:var(--surface);border-radius:10px;padding:3px;margin-bottom:32px;}
+.nav-tab{flex:1;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:500;letter-spacing:0.5px;text-transform:uppercase;padding:8px 4px;border:none;background:none;cursor:pointer;color:var(--ink3);border-radius:8px;transition:all 0.15s;}
+.nav-tab:hover{color:var(--ink2);}
+.nav-tab.active{background:var(--white);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,0.08);}
+
+/* ── PAGE ── */
+.page{display:none;animation:fadeIn 0.15s ease;}
+.page.active{display:block;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:translateY(0);}}
+
+/* ── TYPOGRAPHY ── */
+.display{font-family:'DM Sans',sans-serif;font-size:28px;font-weight:600;letter-spacing:-0.5px;line-height:1.15;}
+.display em{font-style:normal;font-weight:300;color:var(--gold);}
+.section-title{font-family:'DM Sans',sans-serif;font-size:19px;font-weight:500;margin-bottom:4px;}
+.mono{font-family:'DM Mono',monospace;}
+.label{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1.6px;text-transform:uppercase;color:var(--ink4);}
+
+/* ── CARDS ── */
+.card{background:var(--white);border:1px solid var(--border);border-radius:var(--radius-lg);padding:22px;margin-bottom:14px;}
+.card-sm{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);padding:16px 18px;margin-bottom:10px;}
+.surface-card{background:var(--surface);border-radius:var(--radius);padding:14px 16px;margin-bottom:10px;}
+
+/* ── STATS ROW ── */
+.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:20px;}
+.stat{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;}
+.stat .label{margin-bottom:6px;display:block;}
+.stat-val{font-family:'DM Sans',sans-serif;font-size:24px;font-weight:600;line-height:1;}
+.stat-sub{font-size:11px;color:var(--ink3);margin-top:3px;}
+
+/* ── BUTTONS ── */
+.btn{font-family:'DM Sans',sans-serif;font-size:12px;font-weight:600;letter-spacing:0.4px;padding:8px 16px;border-radius:8px;border:1px solid var(--border2);background:var(--white);color:var(--ink2);cursor:pointer;transition:all 0.12s;white-space:nowrap;}
+.btn:hover{background:var(--surface);border-color:var(--border2);color:var(--ink);}
+.btn.primary{background:var(--ink);border-color:var(--ink);color:var(--white);}
+.btn.primary:hover{background:var(--ink2);}
+.btn.gold{background:var(--gold-lt);border-color:var(--gold-md);color:var(--gold);}
+.btn.gold:hover{background:#f3e8c4;}
+.btn.sm{font-size:11px;padding:5px 11px;}
+.btn.danger{color:var(--red);border-color:#e0b0b0;}
+.btn.danger:hover{background:var(--red-lt);}
+
+/* ── INPUTS ── */
+.input{width:100%;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:9px 13px;color:var(--ink);font-family:'DM Sans',sans-serif;font-size:14px;outline:none;transition:border-color 0.12s;}
+.input:focus{border-color:var(--gold);background:var(--white);}
+.input::placeholder{color:var(--ink4);}
+textarea.input{resize:vertical;min-height:80px;line-height:1.65;}
+select.input{cursor:pointer;}
+.form-row{margin-bottom:14px;}
+.form-label{display:block;font-size:12px;font-weight:600;color:var(--ink2);margin-bottom:5px;letter-spacing:0.2px;}
+.form-hint{font-size:11px;color:var(--ink3);margin-top:3px;}
+
+/* ── BIG 3 ── */
+.big3-item{display:flex;align-items:flex-start;gap:12px;padding:12px 14px;background:var(--surface);border-radius:var(--radius);margin-bottom:8px;border:1px solid transparent;transition:border-color 0.12s;}
+.big3-item:hover{border-color:var(--border);}
+.big3-num{font-family:'DM Sans',sans-serif;font-style:italic;font-size:20px;color:var(--ink5);min-width:20px;flex-shrink:0;line-height:1.4;}
+.big3-ta{flex:1;border:none;background:none;font-family:'DM Sans',sans-serif;font-size:14px;color:var(--ink);outline:none;resize:none;min-height:22px;line-height:1.55;}
+.big3-ta::placeholder{color:var(--ink4);}
+.big3-check{width:20px;height:20px;border-radius:50%;border:1.5px solid var(--border2);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:10px;color:transparent;cursor:pointer;margin-top:2px;transition:all 0.12s;background:var(--white);}
+.big3-item.done .big3-check{background:var(--green);border-color:var(--green);color:#fff;}
+.big3-item.done .big3-ta{color:var(--ink3);text-decoration:line-through;text-decoration-color:var(--border2);}
+
+/* ── HABITS ── */
+.habit-card{background:var(--white);border:1px solid var(--border);border-radius:var(--radius-lg);padding:18px 20px;margin-bottom:12px;}
+.habit-top{display:flex;align-items:flex-start;gap:12px;margin-bottom:14px;}
+.habit-check-big{width:26px;height:26px;border-radius:50%;border:2px solid var(--border2);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:12px;color:transparent;cursor:pointer;transition:all 0.15s;background:var(--white);margin-top:1px;}
+.habit-card.done-today .habit-check-big{background:var(--green);border-color:var(--green);color:#fff;}
+.habit-info{flex:1;}
+.habit-name{font-size:15px;font-weight:600;color:var(--ink);margin-bottom:2px;}
+.habit-card.done-today .habit-name{color:var(--ink3);}
+.habit-meta{display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
+.habit-streak{display:flex;align-items:center;gap:4px;font-size:12px;font-weight:600;color:var(--gold);}
+.habit-domain-tag{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:0.5px;padding:2px 7px;border-radius:4px;background:var(--surface);color:var(--ink3);border:1px solid var(--border);}
+.habit-actions-row{display:flex;gap:6px;opacity:0;transition:opacity 0.12s;}
+.habit-card:hover .habit-actions-row{opacity:1;}
+
+/* WEEK GRID */
+.week-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-top:12px;}
+.week-cell{display:flex;flex-direction:column;align-items:center;gap:3px;}
+.week-cell-day{font-family:'DM Mono',monospace;font-size:8px;color:var(--ink4);text-transform:uppercase;}
+.week-cell-box{width:28px;height:28px;border-radius:6px;border:1px solid var(--border);background:var(--surface);cursor:pointer;transition:all 0.12s;display:flex;align-items:center;justify-content:center;font-size:10px;color:transparent;}
+.week-cell-box.done{background:var(--green);border-color:var(--green);color:#fff;}
+.week-cell-box.today-cell{border-color:var(--gold);border-width:2px;}
+.week-cell-box:hover{border-color:var(--border2);}
+
+/* HEATMAP */
+.heatmap{display:flex;flex-wrap:wrap;gap:2px;margin-top:10px;}
+.hm-cell{width:11px;height:11px;border-radius:2px;background:var(--surface);transition:background 0.1s;cursor:default;position:relative;}
+.hm-cell.d1{background:#c8e6d4;}
+.hm-cell.d2{background:#7ec8a0;}
+.hm-cell.d3{background:#3da06a;}
+.hm-cell.d4{background:var(--green);}
+.hm-cell.today-hm{outline:2px solid var(--gold);outline-offset:1px;}
+
+/* ── GOALS ── */
+.goal-card{background:var(--white);border:1px solid var(--border);border-radius:var(--radius-lg);padding:22px;margin-bottom:14px;position:relative;overflow:hidden;}
+.goal-card::before{content:'';position:absolute;top:0;left:0;width:4px;height:100%;background:var(--domain-color,var(--gold));}
+.goal-header{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:10px;}
+.goal-title-text{font-family:'DM Sans',sans-serif;font-size:18px;font-weight:400;line-height:1.3;padding-left:12px;}
+.goal-badges{display:flex;flex-wrap:wrap;gap:6px;padding-left:12px;margin-bottom:12px;}
+.badge{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:0.4px;padding:3px 8px;border-radius:4px;border:1px solid var(--border);background:var(--surface);color:var(--ink3);}
+.badge.domain{color:var(--white);border:none;}
+.goal-why{padding-left:12px;font-size:13px;color:var(--ink3);line-height:1.6;font-style:italic;margin-bottom:14px;border-left:2px solid var(--border);margin-left:0;padding-left:14px;}
+.progress-bar{height:6px;background:var(--surface);border-radius:6px;overflow:hidden;margin-bottom:6px;}
+.progress-fill{height:100%;border-radius:6px;background:var(--domain-color,var(--gold));transition:width 0.4s ease;}
+.progress-row{display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--ink3);margin-bottom:14px;}
+.goal-smarter{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;}
+.smarter-item{background:var(--surface);border-radius:8px;padding:10px 12px;}
+.smarter-letter{font-family:'DM Sans',sans-serif;font-style:italic;font-size:18px;color:var(--ink5);line-height:1;}
+.smarter-label{font-size:9px;font-family:'DM Mono',monospace;letter-spacing:1px;color:var(--ink4);text-transform:uppercase;margin-bottom:3px;}
+.smarter-val{font-size:12px;color:var(--ink2);line-height:1.45;}
+
+/* MILESTONES */
+.milestone-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);}
+.milestone-row:last-child{border-bottom:none;}
+.milestone-check{width:16px;height:16px;border-radius:50%;border:1.5px solid var(--border2);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:8px;color:transparent;cursor:pointer;transition:all 0.12s;}
+.milestone-row.ms-done .milestone-check{background:var(--green);border-color:var(--green);color:#fff;}
+.milestone-row.ms-done .milestone-text{color:var(--ink3);text-decoration:line-through;text-decoration-color:var(--border2);}
+.milestone-text{font-size:13px;color:var(--ink);flex:1;}
+
+/* ── MODALS ── */
+.overlay{display:none;position:fixed;inset:0;background:rgba(24,22,15,0.55);z-index:200;align-items:flex-start;justify-content:center;padding:40px 16px;overflow-y:auto;}
+.overlay.open{display:flex;}
+.modal{background:var(--white);border-radius:var(--radius-lg);padding:30px;width:100%;max-width:560px;border:1px solid var(--border);margin:auto;}
+.modal-title{font-family:'DM Sans',sans-serif;font-size:22px;font-weight:400;margin-bottom:6px;}
+.modal-sub{font-size:13px;color:var(--ink3);margin-bottom:24px;line-height:1.5;}
+.modal-section{font-size:10px;font-family:'DM Mono',monospace;letter-spacing:1.4px;text-transform:uppercase;color:var(--ink4);margin:20px 0 12px;padding-top:16px;border-top:1px solid var(--border);}
+.modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:24px;padding-top:20px;border-top:1px solid var(--border);}
+
+/* ── BRAIN DUMP ── */
+.ai-panel{background:var(--surface);border-radius:var(--radius);padding:16px;margin-top:12px;}
+.ai-header{display:flex;align-items:center;gap:8px;margin-bottom:10px;}
+.ai-dot{width:6px;height:6px;border-radius:50%;background:var(--gold);animation:pulse 2s infinite;}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1);}50%{opacity:0.4;transform:scale(0.8);}}
+.ai-label{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1px;color:var(--ink3);text-transform:uppercase;}
+.ai-text{font-size:13px;color:var(--ink2);line-height:1.8;}
+.ai-text.loading{color:var(--ink4);font-style:italic;}
+
+/* REFLECTION */
+.prompt-block{background:var(--gold-lt);border:1px solid var(--gold-md);border-radius:var(--radius);padding:14px 16px;margin-bottom:12px;}
+.prompt-q{font-family:'DM Sans',sans-serif;font-style:italic;font-size:15px;color:var(--ink);line-height:1.6;margin-bottom:6px;}
+.prompt-src{font-family:'DM Mono',monospace;font-size:9px;color:var(--ink3);letter-spacing:0.5px;}
+
+/* WEEK PAGE */
+.week-score-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-bottom:20px;}
+.wsg-cell{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);padding:10px 6px;text-align:center;}
+.wsg-cell.wsg-today{border-color:var(--gold);border-width:2px;}
+.wsg-day{font-family:'DM Mono',monospace;font-size:8px;text-transform:uppercase;color:var(--ink4);margin-bottom:5px;}
+.wsg-score{font-family:'DM Sans',sans-serif;font-size:18px;color:var(--ink);}
+
+/* DOMAIN GROUP */
+.domain-group{margin-bottom:28px;}
+.domain-group-header{display:flex;align-items:center;gap:10px;margin-bottom:12px;}
+.domain-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.domain-group-name{font-family:'DM Sans',sans-serif;font-size:16px;font-weight:400;}
+.domain-goal-count{font-family:'DM Mono',monospace;font-size:10px;color:var(--ink3);}
+
+/* ADD MILESTONE */
+.add-ms-row{display:flex;gap:8px;margin-top:10px;}
+
+/* ── FITNESS ── */
+.macro-bar-wrap{margin-bottom:10px;}
+.macro-bar-label{display:flex;justify-content:space-between;font-size:12px;color:var(--ink2);margin-bottom:4px;}
+.macro-bar-track{height:8px;background:var(--surface);border-radius:8px;overflow:hidden;}
+.macro-bar-fill{height:100%;border-radius:8px;transition:width 0.4s ease;}
+.workout-card{background:var(--white);border:1px solid var(--border);border-radius:var(--radius-lg);padding:18px 20px;margin-bottom:10px;}
+.workout-header{display:flex;justify-content:space-between;align-items:flex-start;}
+.workout-muscle{font-family:'DM Sans',sans-serif;font-size:17px;font-weight:400;}
+.workout-date{font-family:'DM Mono',monospace;font-size:10px;color:var(--ink3);}
+.workout-feel{display:inline-flex;align-items:center;gap:5px;font-size:12px;margin-top:6px;padding:3px 10px;border-radius:6px;border:1px solid var(--border);background:var(--surface);}
+.muscle-chip{padding:6px 14px;border-radius:20px;font-size:11px;font-weight:600;letter-spacing:0.3px;border:1px solid var(--border);background:var(--surface);color:var(--ink2);}
+.muscle-chip.trained{background:var(--green);border-color:var(--green);color:#fff;}
+.feel-btn{padding:8px 14px;border-radius:8px;border:1.5px solid var(--border);background:var(--white);cursor:pointer;font-size:13px;transition:all 0.12s;font-family:'DM Sans',sans-serif;}
+.feel-btn:hover{border-color:var(--border2);background:var(--surface);}
+.feel-btn.selected{border-color:var(--green);background:var(--green-lt);color:var(--green);font-weight:600;}
+
+/* ── CALENDAR ── */
+.fit-cal{width:100%;}
+.fit-cal-header{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin-bottom:3px;}
+.fit-cal-dayname{text-align:center;font-family:'DM Mono',monospace;font-size:9px;color:var(--ink4);text-transform:uppercase;padding:3px 0;}
+.fit-cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;}
+.fit-cal-cell{border-radius:6px;padding:5px 3px;min-height:52px;border:1px solid var(--border);background:var(--white);position:relative;cursor:pointer;transition:border-color 0.12s,background 0.12s;}
+.fit-cal-cell:hover{border-color:var(--border2);background:var(--surface);}
+.fit-cal-cell.empty{background:transparent;border-color:transparent;cursor:default;pointer-events:none;}
+.fit-cal-cell.today-cal{border-color:var(--gold);border-width:2px;}
+.fit-cal-cell.future{opacity:0.4;pointer-events:none;}
+.fit-cal-cell.has-data{background:var(--white);}
+.cal-drawer{background:var(--white);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px;margin-top:10px;animation:fadeIn 0.15s ease;}
+.cal-drawer-date{font-family:'DM Sans',sans-serif;font-size:18px;font-weight:400;margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid var(--border);}
+.cal-drawer-section{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1.4px;text-transform:uppercase;color:var(--ink4);margin:12px 0 8px;}
+.cal-workout-pill{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;background:var(--green-lt);border:1px solid var(--green);border-radius:8px;font-size:12px;font-weight:600;color:var(--green);margin:0 4px 6px 0;}
+.cal-macro-row{display:flex;justify-content:space-between;font-size:13px;padding:5px 0;border-bottom:1px solid var(--border);}
+.cal-macro-row:last-child{border-bottom:none;}
+.cal-day-num{font-size:10px;font-family:'DM Mono',monospace;color:var(--ink3);margin-bottom:3px;}
+.cal-dots{display:flex;flex-wrap:wrap;gap:2px;margin-top:2px;}
+.cal-dot{width:6px;height:6px;border-radius:50%;}
+.cal-dot-w{background:var(--green);}
+.cal-dot-m{background:#1a5276;}
+.cal-dot-b{background:var(--gold);}
+.cal-macro-mini{font-size:8px;font-family:'DM Mono',monospace;color:var(--ink3);line-height:1.3;margin-top:2px;}
+/* Target display */
+.target-chip{background:var(--surface);border-radius:8px;padding:10px 12px;text-align:center;}
+.target-chip .val{font-family:'DM Sans',sans-serif;font-size:20px;color:var(--ink);}
+.target-chip .unit{font-size:10px;color:var(--ink3);margin-top:2px;}
+/* Devotional */
+.scripture-block{font-family:'DM Sans',sans-serif;font-style:italic;font-size:16px;line-height:1.8;color:var(--ink);margin-bottom:8px;border-left:3px solid var(--gold);padding-left:16px;}
+.scripture-ref{font-family:'DM Mono',monospace;font-size:11px;color:var(--gold);letter-spacing:0.5px;}
+.dev-history-item{background:var(--surface);border-radius:var(--radius);padding:14px 16px;margin-bottom:8px;cursor:pointer;transition:background 0.12s;}
+.dev-history-item:hover{background:var(--border);}
+.dev-history-date{font-family:'DM Mono',monospace;font-size:10px;color:var(--ink3);margin-bottom:4px;}
+.dev-history-ref{font-size:13px;font-weight:600;color:var(--ink);}
+
+
+.muscle-sel-btn{padding:6px 12px;border-radius:7px;border:1.5px solid var(--border);background:var(--white);cursor:pointer;font-size:12px;font-weight:500;font-family:'DM Sans',sans-serif;color:var(--ink2);transition:all 0.12s;letter-spacing:0.2px;}
+.muscle-sel-btn:hover{border-color:var(--border2);background:var(--surface);}
+.muscle-sel-btn.sel{border-color:var(--green);background:var(--green-lt);color:var(--green);}
+
+/* ── DAY PLANNER ── */
+.cal-event-row{display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--surface);border-radius:8px;margin-bottom:6px;border:1px solid transparent;transition:border-color 0.12s;}
+.cal-event-row:hover{border-color:var(--border);}
+.cal-event-time{font-family:'DM Mono',monospace;font-size:11px;color:var(--gold);min-width:42px;font-weight:500;}
+.cal-event-title{flex:1;font-size:13px;color:var(--ink);}
+.cal-event-del{width:20px;height:20px;border-radius:50%;border:none;background:none;color:var(--ink4);cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity 0.12s;}
+.cal-event-row:hover .cal-event-del{opacity:1;}
+.cal-event-del:hover{color:var(--red);}
+.add-event-row{display:flex;gap:6px;margin-top:8px;}
+.time-input{width:80px;flex-shrink:0;}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <div class="app-header">
+    <div class="app-title">Life <em>OS</em></div>
+    <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;">
+      <div style="display:flex;gap:6px;">
+        <button class="btn sm" onclick="exportData()" title="Download your data as a backup file">Export data</button>
+        <button class="btn sm" onclick="document.getElementById('import-input').click()" title="Restore from a backup file">Import</button>
+        <input type="file" id="import-input" accept=".json" style="display:none;" onchange="importData(event)"/>
+      </div>
+      <div class="app-date" id="hdr-date">—</div>
+      <div style="text-align:right;font-family:'DM Sans',sans-serif;font-size:22px;color:var(--gold);line-height:1;" id="hdr-score">—</div>
+    </div>
+  </div>
+
+  <nav class="nav">
+    <button class="nav-tab active" onclick="nav('today',this)">Today</button>
+    <button class="nav-tab" onclick="nav('habits',this)">Habits</button>
+    <button class="nav-tab" onclick="nav('goals',this)">Goals</button>
+    <button class="nav-tab" onclick="nav('reflect',this)">Reflect</button>
+    <button class="nav-tab" onclick="nav('week',this)">Week</button>
+    <button class="nav-tab" onclick="nav('fitness',this)">Fitness</button>
+    <button class="nav-tab" onclick="nav('devotional',this)">Devotional</button>
+  </nav>
+
+  <!-- ══ TODAY ══ -->
+  <div id="page-today" class="page active">
+    <div style="margin-bottom:24px;">
+      <div class="display" id="today-greeting">Good morning, Parker.</div>
+      <div style="font-size:13px;color:var(--ink3);margin-top:4px;" id="today-sub">—</div>
+    </div>
+    <div class="stats-row" id="today-stats"></div>
+
+    <!-- DAILY BIG 3 -->
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+        <div><div class="section-title">Daily Big 3</div><div style="font-size:12px;color:var(--ink3);">Your 3 most important outcomes today</div></div>
+        <span class="label">Hyatt method</span>
+      </div>
+      <div id="daily-big3"></div>
+    </div>
+
+    <!-- DAY PLANNER -->
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px;">
+        <div>
+          <div class="section-title">Day Planner</div>
+          <div style="font-size:12px;color:var(--ink3);margin-top:2px;">Your calendar + priorities — Claude will optimize your day against your goals</div>
+        </div>
+        <button class="btn sm gold" onclick="optimizeDayAI()">Optimize my day ↗</button>
+      </div>
+
+      <!-- CALENDAR EVENTS -->
+      <div class="label" style="margin-bottom:8px;">Today's calendar</div>
+      <div id="day-cal-events"></div>
+      <div class="add-event-row">
+        <input class="input time-input" type="time" id="new-event-time" />
+        <input class="input" id="new-event-title" placeholder="Meeting, call, commitment..." style="flex:1;" onkeydown="if(event.key==='Enter')addCalEvent()"/>
+        <button class="btn sm" onclick="addCalEvent()">Add</button>
+      </div>
+
+      <!-- OTHER PRIORITIES -->
+      <div class="label" style="margin:16px 0 8px;">Other priorities & tasks</div>
+      <textarea class="input" id="day-priorities" placeholder="Anything else that needs to happen today — tasks, calls, follow-ups, errands..." style="min-height:70px;" oninput="saveDayPlan()"></textarea>
+
+      <!-- AI OUTPUT -->
+      <div id="day-optimize-ai" style="display:none;margin-top:12px;" class="ai-panel">
+        <div class="ai-header"><div class="ai-dot"></div><div class="ai-label">Claude — daily game plan</div></div>
+        <div class="ai-text" id="day-optimize-text"></div>
+      </div>
+    </div>
+
+    <!-- BRAIN DUMP -->
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px;">
+        <div><div class="section-title">Brain dump</div><div style="font-size:12px;color:var(--ink3);margin-top:2px;">Everything on your mind — tasks, worries, ideas, decisions</div></div>
+        <button class="btn sm gold" onclick="brainDumpAI()">Process with AI ↗</button>
+      </div>
+      <textarea class="input" id="brain-dump" placeholder="Just write. No format required. Get it all out of your head..." style="margin-top:12px;min-height:110px;"></textarea>
+      <div id="brain-dump-ai" style="display:none;" class="ai-panel">
+        <div class="ai-header"><div class="ai-dot"></div><div class="ai-label">Claude — clarity + next actions</div></div>
+        <div class="ai-text" id="brain-dump-ai-text"></div>
+      </div>
+    </div>
+
+    <!-- TODAY'S HABITS -->
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+      <div class="section-title">Today's habits</div>
+      <button class="btn sm" onclick="nav('habits',document.querySelectorAll('.nav-tab')[1])">Manage habits</button>
+    </div>
+    <div id="today-habits-list"></div>
+
+    <!-- DAILY REFLECTION -->
+    <div class="card" style="margin-top:6px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+        <div class="section-title">Daily reflection</div>
+        <button class="btn sm" onclick="nextPrompt()">Next prompt</button>
+      </div>
+      <div class="prompt-block">
+        <div class="prompt-q" id="reflect-q">—</div>
+        <div class="prompt-src" id="reflect-src">—</div>
+      </div>
+      <textarea class="input" id="daily-reflect-text" placeholder="Write your reflection here..." style="width:100%;"></textarea>
+      <div style="display:flex;gap:8px;align-items:center;margin-top:10px;">
+        <button class="btn gold" onclick="coachAI('daily')">Get coaching insight ↗</button>
+        <span id="reflect-saved" style="font-size:11px;color:var(--green);opacity:0;transition:opacity 0.3s;font-family:'DM Mono',monospace;">saved</span>
+      </div>
+      <div id="daily-coach-ai" style="display:none;margin-top:12px;" class="ai-panel">
+        <div class="ai-header"><div class="ai-dot"></div><div class="ai-label">Claude coaching</div></div>
+        <div class="ai-text" id="daily-coach-text"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ HABITS ══ -->
+  <div id="page-habits" class="page">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;">
+      <div><div class="display">Habits</div><div style="font-size:13px;color:var(--ink3);margin-top:4px;">Build the daily practices that drive your goals</div></div>
+      <button class="btn primary" onclick="openHabitModal()">+ New habit</button>
+    </div>
+    <div id="habits-page-list"></div>
+    <div id="habits-empty" style="color:var(--ink3);font-size:14px;padding:30px 0;text-align:center;display:none;">
+      <div style="font-family:'DM Sans',sans-serif;font-size:20px;margin-bottom:8px;color:var(--ink4);">No habits yet.</div>
+      Create your first habit to start tracking daily consistency.
+    </div>
+  </div>
+
+  <!-- ══ GOALS ══ -->
+  <div id="page-goals" class="page">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;">
+      <div><div class="display">Goals</div><div style="font-size:13px;color:var(--ink3);margin-top:4px;">SMARTER goals across your 10 life domains</div></div>
+      <button class="btn primary" onclick="openGoalModal()">+ New goal</button>
+    </div>
+    <div id="goals-page-list"></div>
+    <div id="goals-empty" style="color:var(--ink3);font-size:14px;padding:30px 0;text-align:center;display:none;">
+      <div style="font-family:'DM Sans',sans-serif;font-size:20px;margin-bottom:8px;color:var(--ink4);">No goals yet.</div>
+      Add your first SMARTER goal to get started.
+    </div>
+  </div>
+
+  <!-- ══ REFLECT ══ -->
+  <div id="page-reflect" class="page">
+    <div style="margin-bottom:24px;"><div class="display">Daily review</div><div style="font-size:13px;color:var(--ink3);margin-top:4px;">End-of-day — Full Focus Planner, Michael Hyatt</div></div>
+    <div id="daily-review-list"></div>
+    <div style="display:flex;gap:8px;margin-top:4px;">
+      <button class="btn gold" onclick="coachAI('review')">Generate full coaching summary ↗</button>
+    </div>
+    <div id="review-coach-ai" style="display:none;margin-top:14px;" class="ai-panel">
+      <div class="ai-header"><div class="ai-dot"></div><div class="ai-label">Claude daily summary</div></div>
+      <div class="ai-text" id="review-coach-text"></div>
+    </div>
+  </div>
+
+  <!-- ══ WEEK ══ -->
+  <div id="page-week" class="page">
+    <div style="margin-bottom:24px;"><div class="display">Weekly review</div><div style="font-size:13px;color:var(--ink3);margin-top:4px;">Full Focus Planner framework — Michael Hyatt</div></div>
+    <div class="card">
+      <div class="label" style="margin-bottom:12px;">This week at a glance</div>
+      <div class="week-score-grid" id="week-score-grid"></div>
+    </div>
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+        <div><div class="section-title">Weekly Big 3</div><div style="font-size:12px;color:var(--ink3);">Your 3 most important outcomes this week</div></div>
+        <span class="label">Hyatt method</span>
+      </div>
+      <div id="weekly-big3"></div>
+    </div>
+    <div id="weekly-review-list"></div>
+    <div style="display:flex;gap:8px;margin-top:4px;">
+      <button class="btn gold" onclick="coachAI('weekly')">Generate weekly coaching ↗</button>
+    </div>
+    <div id="weekly-coach-ai" style="display:none;margin-top:14px;" class="ai-panel">
+      <div class="ai-header"><div class="ai-dot"></div><div class="ai-label">Claude weekly summary</div></div>
+      <div class="ai-text" id="weekly-coach-text"></div>
+    </div>
+  </div>
+
+  <!-- ══ FITNESS ══ -->
+  <div id="page-fitness" class="page">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:24px;">
+      <div>
+        <div class="display">Fitness</div>
+        <div style="font-size:13px;color:var(--ink3);margin-top:4px;">FST-7 training log + daily macros + water</div>
+      </div>
+      <button class="btn primary" onclick="openWorkoutModal()">+ Log workout</button>
+    </div>
+
+    <!-- MACRO CARD -->
+    <div class="card" style="margin-bottom:14px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+        <div><div class="section-title">Today's nutrition</div><div style="font-size:12px;color:var(--ink3);margin-top:2px;">Enter today's intake — bars update as you type</div></div>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <div class="label" id="macro-date-label">—</div>
+          <button class="btn sm" onclick="toggleTargetEdit()" id="target-edit-btn">Edit targets</button>
+        </div>
+      </div>
+      <!-- TARGET EDIT PANEL (hidden by default) -->
+      <div id="macro-targets-edit" style="display:none;padding:14px;background:var(--surface);border-radius:var(--radius);margin-bottom:16px;">
+        <div class="label" style="margin-bottom:10px;">Daily targets</div>
+        <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px;">
+          <div><div class="label" style="margin-bottom:4px;">Calories</div><input class="input" type="number" id="t-cal" style="text-align:center;" oninput="saveTargets()"/><div style="font-size:10px;color:var(--ink3);text-align:center;margin-top:2px;">kcal</div></div>
+          <div><div class="label" style="margin-bottom:4px;">Protein</div><input class="input" type="number" id="t-protein" style="text-align:center;" oninput="saveTargets()"/><div style="font-size:10px;color:var(--ink3);text-align:center;margin-top:2px;">g</div></div>
+          <div><div class="label" style="margin-bottom:4px;">Carbs</div><input class="input" type="number" id="t-carbs" style="text-align:center;" oninput="saveTargets()"/><div style="font-size:10px;color:var(--ink3);text-align:center;margin-top:2px;">g</div></div>
+          <div><div class="label" style="margin-bottom:4px;">Fat</div><input class="input" type="number" id="t-fat" style="text-align:center;" oninput="saveTargets()"/><div style="font-size:10px;color:var(--ink3);text-align:center;margin-top:2px;">g</div></div>
+          <div><div class="label" style="margin-bottom:4px;">Water</div><input class="input" type="number" id="t-water" style="text-align:center;" oninput="saveTargets()"/><div style="font-size:10px;color:var(--ink3);text-align:center;margin-top:2px;">oz</div></div>
+        </div>
+      </div>
+      <!-- TODAY INPUTS -->
+      <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:16px;">
+        <div><div class="label" style="margin-bottom:4px;">Calories</div><input class="input" type="number" id="m-cal" placeholder="0" style="text-align:center;font-size:20px;font-family:'DM Sans',sans-serif;padding:10px 4px;" oninput="saveMacros()"/><div id="tgt-cal" style="font-size:10px;color:var(--ink4);text-align:center;margin-top:3px;">goal: 2800 kcal</div></div>
+        <div><div class="label" style="margin-bottom:4px;">Protein</div><input class="input" type="number" id="m-protein" placeholder="0" style="text-align:center;font-size:20px;font-family:'DM Sans',sans-serif;padding:10px 4px;" oninput="saveMacros()"/><div id="tgt-protein" style="font-size:10px;color:var(--ink4);text-align:center;margin-top:3px;">goal: 220 g</div></div>
+        <div><div class="label" style="margin-bottom:4px;">Carbs</div><input class="input" type="number" id="m-carbs" placeholder="0" style="text-align:center;font-size:20px;font-family:'DM Sans',sans-serif;padding:10px 4px;" oninput="saveMacros()"/><div id="tgt-carbs" style="font-size:10px;color:var(--ink4);text-align:center;margin-top:3px;">goal: 280 g</div></div>
+        <div><div class="label" style="margin-bottom:4px;">Fat</div><input class="input" type="number" id="m-fat" placeholder="0" style="text-align:center;font-size:20px;font-family:'DM Sans',sans-serif;padding:10px 4px;" oninput="saveMacros()"/><div id="tgt-fat" style="font-size:10px;color:var(--ink4);text-align:center;margin-top:3px;">goal: 80 g</div></div>
+        <div><div class="label" style="margin-bottom:4px;">Water</div><input class="input" type="number" id="m-water" placeholder="0" style="text-align:center;font-size:20px;font-family:'DM Sans',sans-serif;padding:10px 4px;" oninput="saveMacros()"/><div id="tgt-water" style="font-size:10px;color:var(--ink4);text-align:center;margin-top:3px;">goal: 128 oz</div></div>
+      </div>
+      <!-- PROGRESS BARS -->
+      <div id="macro-bars"></div>
+    </div>
+
+    <!-- TRAINING LOG -->
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+      <div class="section-title">Training log</div>
+    </div>
+    <div id="workout-log-list"></div>
+    <div id="workout-empty" style="color:var(--ink3);font-size:14px;padding:20px 0;text-align:center;display:none;">
+      <div style="font-family:\'Playfair Display\',serif;font-size:18px;color:var(--ink4);margin-bottom:6px;">No workouts logged yet.</div>
+      Hit "+ Log workout" to record your first FST-7 session.
+    </div>
+
+    <!-- MUSCLE WEEK -->
+    <div class="card" style="margin-top:6px;">
+      <div class="label" style="margin-bottom:14px;">Muscle groups this week</div>
+      <div id="muscle-week-grid" style="display:flex;flex-wrap:wrap;gap:8px;"></div>
+    </div>
+
+    <!-- AI HEALTH ASSISTANT -->
+    <div class="card" style="margin-top:14px;">
+      <div style="margin-bottom:14px;">
+        <div class="section-title">Health AI</div>
+        <div style="font-size:12px;color:var(--ink3);margin-top:2px;">Ask anything about your training, nutrition, or recovery</div>
+      </div>
+      <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;">
+        <button class="btn sm" onclick="fitnessQuickPrompt(\'macros\')">Analyze macros</button>
+        <button class="btn sm" onclick="fitnessQuickPrompt(\'week\')">Review week</button>
+        <button class="btn sm" onclick="fitnessQuickPrompt(\'fst7\')">FST-7 tip</button>
+        <button class="btn sm" onclick="fitnessQuickPrompt(\'recovery\')">Recovery advice</button>
+        <button class="btn sm gold" onclick="fitnessCustomAI()">Ask ↗</button>
+      </div>
+      <input class="input" id="fitness-ai-input" placeholder="Ask your health assistant anything..." style="margin-bottom:10px;"/>
+      <div id="fitness-ai-panel" style="display:none;" class="ai-panel">
+        <div class="ai-header"><div class="ai-dot"></div><div class="ai-label">Health AI — Claude</div></div>
+        <div class="ai-text" id="fitness-ai-text"></div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ══ DEVOTIONAL ══ -->
+  <div id="page-devotional" class="page">
+    <div style="margin-bottom:24px;">
+      <div class="display">Daily devotional</div>
+      <div style="font-size:13px;color:var(--ink3);margin-top:4px;">Scripture · reflection · response — NLT translation</div>
+    </div>
+
+    <!-- SCRIPTURE CARD -->
+    <div class="card" style="border-left:4px solid var(--gold);margin-bottom:14px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+        <div class="label">Today's scripture</div>
+        <div style="display:flex;gap:8px;">
+          <div class="label" id="dev-date-label">—</div>
+          <button class="btn sm gold" onclick="loadDevotional()">New passage ↗</button>
+        </div>
+      </div>
+      <div id="dev-scripture-wrap">
+        <div style="color:var(--ink3);font-size:13px;font-style:italic;">Click "New passage" to receive today's scripture and reflection questions.</div>
+      </div>
+    </div>
+
+    <!-- REFLECTION QUESTIONS -->
+    <div id="dev-questions-wrap" style="display:none;">
+      <div class="card" style="margin-bottom:14px;">
+        <div class="section-title" style="margin-bottom:16px;">Reflection questions</div>
+        <div id="dev-q1-wrap" style="margin-bottom:16px;">
+          <div class="prompt-block" style="margin-bottom:8px;"><div class="prompt-q" id="dev-q1">—</div></div>
+          <textarea class="input" id="dev-a1" placeholder="Your response..." style="width:100%;min-height:70px;"></textarea>
+        </div>
+        <div id="dev-q2-wrap" style="margin-bottom:16px;">
+          <div class="prompt-block" style="margin-bottom:8px;"><div class="prompt-q" id="dev-q2">—</div></div>
+          <textarea class="input" id="dev-a2" placeholder="Your response..." style="width:100%;min-height:70px;"></textarea>
+        </div>
+        <div id="dev-q3-wrap" style="margin-bottom:16px;">
+          <div class="prompt-block" style="margin-bottom:8px;"><div class="prompt-q" id="dev-q3">—</div></div>
+          <textarea class="input" id="dev-a3" placeholder="Your response..." style="width:100%;min-height:70px;"></textarea>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;margin-top:8px;">
+          <button class="btn gold" onclick="submitDevotional()">Submit for feedback ↗</button>
+          <span id="dev-saved" style="font-size:11px;color:var(--green);opacity:0;transition:opacity 0.3s;font-family:'DM Mono',monospace;">saved</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- AI FEEDBACK -->
+    <div id="dev-feedback-wrap" style="display:none;" class="card">
+      <div class="section-title" style="margin-bottom:12px;">Reflection feedback</div>
+      <div id="dev-feedback-ai" class="ai-panel">
+        <div class="ai-header"><div class="ai-dot"></div><div class="ai-label">Claude — devotional response</div></div>
+        <div class="ai-text" id="dev-feedback-text">—</div>
+      </div>
+    </div>
+
+    <!-- PAST DEVOTIONALS -->
+    <div style="margin-top:20px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+        <div class="section-title">Past devotionals</div>
+      </div>
+      <div id="dev-history-list"></div>
+    </div>
+  </div>
+
+
+</div>
+
+<!-- ══ HABIT MODAL ══ -->
+<div class="overlay" id="habit-modal">
+  <div class="modal">
+    <div class="modal-title" id="hm-title">New habit</div>
+    <div class="modal-sub">Keep it simple and specific. One behavior, one trigger.</div>
+    <div class="form-row">
+      <label class="form-label">Habit name</label>
+      <input class="input" id="hm-name" placeholder="e.g. Morning devotional, FST-7 workout, Read 20 min"/>
+    </div>
+    <div class="form-row">
+      <label class="form-label">Linked domain <span style="font-weight:300;color:var(--ink3)">(optional)</span></label>
+      <select class="input" id="hm-domain">
+        <option value="">— None —</option>
+      </select>
+    </div>
+    <div class="form-row">
+      <label class="form-label">Linked goal <span style="font-weight:300;color:var(--ink3)">(optional)</span></label>
+      <select class="input" id="hm-goal">
+        <option value="">— None —</option>
+      </select>
+    </div>
+    <div class="form-row">
+      <label class="form-label">Why this habit matters</label>
+      <textarea class="input" id="hm-why" placeholder="Connect it to a deeper motivation..." style="min-height:60px;"></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal('habit-modal')">Cancel</button>
+      <button class="btn primary" onclick="saveHabit()">Save habit</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ GOAL MODAL ══ -->
+<div class="overlay" id="goal-modal">
+  <div class="modal">
+    <div class="modal-title" id="gm-title">New SMARTER goal</div>
+    <div class="modal-sub">Michael Hyatt's Full Focus framework — Specific, Measurable, Actionable, Risky, Time-keyed, Exciting, Relevant.</div>
+
+    <div class="form-row">
+      <label class="form-label">Goal statement</label>
+      <input class="input" id="gm-title-input" placeholder="State it clearly and boldly..."/>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+      <div class="form-row">
+        <label class="form-label">Life domain</label>
+        <select class="input" id="gm-domain"></select>
+      </div>
+      <div class="form-row">
+        <label class="form-label">Target date</label>
+        <input class="input" type="date" id="gm-date"/>
+      </div>
+    </div>
+
+    <div class="modal-section">SMARTER breakdown</div>
+    <div class="form-row">
+      <label class="form-label">S — Specific: What exactly will you achieve?</label>
+      <input class="input" id="gm-specific" placeholder="The more concrete, the better..."/>
+    </div>
+    <div class="form-row">
+      <label class="form-label">M — Measurable: How will you know you've succeeded?</label>
+      <input class="input" id="gm-measurable" placeholder="A number, milestone, or outcome you can verify..."/>
+    </div>
+    <div class="form-row">
+      <label class="form-label">A — Actionable: What's the first step you can take?</label>
+      <input class="input" id="gm-actionable" placeholder="Something you can do this week..."/>
+    </div>
+    <div class="form-row">
+      <label class="form-label">R — Risky: Why does this stretch you?</label>
+      <input class="input" id="gm-risky" placeholder="What makes this uncomfortable or ambitious..."/>
+    </div>
+    <div class="form-row">
+      <label class="form-label">T — Time-keyed: What's the deadline pressure?</label>
+      <input class="input" id="gm-timekeyed" placeholder="Why does the date matter..."/>
+    </div>
+    <div class="form-row">
+      <label class="form-label">E — Exciting: Why does this energize you?</label>
+      <input class="input" id="gm-exciting" placeholder="What gets you fired up about this goal..."/>
+    </div>
+    <div class="form-row">
+      <label class="form-label">R — Relevant: How does this connect to your bigger vision?</label>
+      <input class="input" id="gm-relevant" placeholder="Why this goal, why now..."/>
+    </div>
+
+    <div class="modal-section">Milestones</div>
+    <div id="gm-milestones-list"></div>
+    <div class="add-ms-row">
+      <input class="input" id="gm-ms-input" placeholder="Add a milestone..." style="flex:1;"/>
+      <button class="btn sm" onclick="addModalMilestone()">Add</button>
+    </div>
+
+    <div class="modal-section">Progress</div>
+    <div class="form-row">
+      <label class="form-label">Current progress: <span id="gm-pct-label">0%</span></label>
+      <input type="range" id="gm-progress" min="0" max="100" value="0" step="1" style="width:100%;accent-color:var(--gold);" oninput="document.getElementById('gm-pct-label').textContent=this.value+'%'"/>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal('goal-modal')">Cancel</button>
+      <button class="btn primary" onclick="saveGoal()">Save goal</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ══ CONSTANTS ══
+const DOMAINS = [
+  {id:'spiritual',   name:'Spiritual',         color:'#6d4fa0'},
+  {id:'intellectual',name:'Intellectual',       color:'#1a5276'},
+  {id:'emotional',   name:'Emotional',          color:'#9b3070'},
+  {id:'physical',    name:'Physical',           color:'#2a6644'},
+  {id:'romantic',    name:'Romantic',           color:'#9a7b2e'},
+  {id:'parental',    name:'Parental',           color:'#c0550a'},
+  {id:'social',      name:'Social',             color:'#1a7a8a'},
+  {id:'vocational',  name:'Vocational',         color:'#3d3a30'},
+  {id:'avocational', name:'Avocational',        color:'#5a3d8a'},
+  {id:'financial',   name:'Financial',          color:'#7a6010'}
+];
+
+const DAILY_PROMPTS = [
+  {q:'What is the one thing I can do today that would make everything else easier or unnecessary?', src:'The ONE Thing — Gary Keller / Hyatt application'},
+  {q:'What three things am I most grateful for this morning, and why do they matter?', src:'Full Focus Planner — Michael Hyatt'},
+  {q:'What would make today a great day? What does a win look like at 9 PM tonight?', src:'Full Focus Planner — Michael Hyatt'},
+  {q:'Who do I need to be today — as a father, a professional, a man of faith?', src:'Full Focus Planner — Michael Hyatt (adapted)'},
+  {q:'What area of my life have I been neglecting, and what\'s one small step I could take today?', src:'Living Forward — Michael Hyatt'},
+  {q:'What\'s the gap between who I am today and who I want to become? What closes that gap by 1% today?', src:'Your Best Year Ever — Michael Hyatt'},
+  {q:'If I looked back on today from five years in the future, what would I want to have done?', src:'Living Forward — Michael Hyatt'}
+];
+
+const DAILY_REVIEW_Qs = [
+  {q:'What did I accomplish today? Name 3 specific wins, even small ones.', src:'Full Focus Planner — Michael Hyatt'},
+  {q:'What did I leave unfinished? What needs to carry forward?', src:'Full Focus Planner — Michael Hyatt'},
+  {q:'Where did I feel most alive and engaged today?', src:'Free to Focus — Michael Hyatt'},
+  {q:'What would I do differently if I could replay today?', src:'Your Best Year Ever — Michael Hyatt'}
+];
+
+const WEEKLY_Qs = [
+  {q:'What were my wins this week? What went well and why?', src:'Full Focus Planner — Weekly Review, Michael Hyatt'},
+  {q:'What were my struggles? What got in the way?', src:'Full Focus Planner — Michael Hyatt'},
+  {q:'What did I learn this week — about myself, my work, or others?', src:'Your Best Year Ever — Michael Hyatt'},
+  {q:'How well did I care for myself this week (sleep, exercise, nutrition, relationships)?', src:'Full Focus Planner — Michael Hyatt'},
+  {q:'Where did I drift from my priorities? What caused the drift?', src:'Free to Focus — Michael Hyatt'},
+  {q:'What do I want to accomplish next week? What\'s my Weekly Big 3?', src:'Full Focus Planner — Weekly Preview, Michael Hyatt'},
+  {q:'What relationships need attention? Who do I need to connect with?', src:'Living Forward — Michael Hyatt'},
+  {q:'What is God teaching me right now, and how am I responding?', src:'Full Focus Planner — faith edition'}
+];
+
+const SK = 'lifeos_v3';
+let S = {};
+let promptIdx = 0;
+let editingHabitId = null;
+let editingGoalId = null;
+let modalMilestones = [];
+
+// ══ DATE HELPERS ══
+function todayKey() {
+  const d = new Date();
+  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+}
+function weekKey() {
+  const d = new Date(), day = d.getDay();
+  const sun = new Date(d); sun.setDate(d.getDate() - day);
+  return `w${sun.getFullYear()}${pad(sun.getMonth()+1)}${pad(sun.getDate())}`;
+}
+function pad(n) { return String(n).padStart(2,'0'); }
+function dateLabel(key) {
+  const [y,m,d] = key.split('-');
+  return new Date(+y,+m-1,+d);
+}
+function formatDate(d) {
+  const days=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  const months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  return `${days[d.getDay()]}, ${months[d.getMonth()]} ${d.getDate()} ${d.getFullYear()}`;
+}
+function getWeekDays() {
+  const now = new Date(), day = now.getDay();
+  return Array.from({length:7},(_,i)=>{const d=new Date(now);d.setDate(now.getDate()-day+i);return d;});
+}
+
+// ══ STATE ══
+function load() {
+  try { const r=localStorage.getItem(SK); if(r) S=JSON.parse(r); } catch(e) {}
+  if(!S.habits) S.habits = [];
+  if(!S.goals)  S.goals  = [];
+  if(!S.dailyBig3) S.dailyBig3 = {};
+  if(!S.weeklyBig3) S.weeklyBig3 = {};
+  if(!S.habitLog) S.habitLog = {};
+  if(!S.brainDump) S.brainDump = {};
+  if(!S.dailyReflect) S.dailyReflect = {};
+  if(!S.dailyReview) S.dailyReview = {};
+  if(!S.weeklyReview) S.weeklyReview = {};
+  if(!S.promptIdx) S.promptIdx = {};
+  if(!S.milestones) S.milestones = {};
+  if(!S.dayPlan) S.dayPlan = {};
+
+  const today = todayKey(), wk = weekKey();
+  if(!S.dailyBig3[today]) S.dailyBig3[today] = [{t:'',done:false},{t:'',done:false},{t:'',done:false}];
+  if(!S.weeklyBig3[wk]) S.weeklyBig3[wk] = [{t:'',done:false},{t:'',done:false},{t:'',done:false}];
+  if(!S.dailyReview[today]) S.dailyReview[today] = {};
+  if(!S.weeklyReview[wk]) S.weeklyReview[wk] = {};
+  promptIdx = S.promptIdx[today] || 0;
+}
+function save() { try { localStorage.setItem(SK, JSON.stringify(S)); } catch(e) {} }
+
+// ══ COMPUTED ══
+function habitDoneToday(hid) { return !!(S.habitLog[hid]||{})[todayKey()]; }
+function habitStreakCount(hid) {
+  const log = S.habitLog[hid] || {};
+  let streak = 0, d = new Date();
+  for(let i=0;i<365;i++) {
+    const k = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+    if(log[k]) streak++;
+    else if(i>0) break;
+    d.setDate(d.getDate()-1);
+  }
+  return streak;
+}
+function habitsToday() { return S.habits.length; }
+function habitsDoneToday() { return S.habits.filter(h=>habitDoneToday(h.id)).length; }
+function big3Done(arr) { return arr.filter(x=>x.done&&x.t.trim()).length; }
+function goalProgress(g) { return g.progress||0; }
+
+// ══ NAVIGATION ══
+function nav(pageId, tab) {
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('page-'+pageId).classList.add('active');
+  tab.classList.add('active');
+  renders[pageId]();
+}
+
+// ══ HEADER ══
+function setEl(id, val, prop) {
+  const el = document.getElementById(id);
+  if(el) el[prop||'textContent'] = val;
+}
+
+function renderHeader() {
+  const now = new Date(), h = now.getHours();
+  setEl('today-greeting', (h<12?'Good morning':h<17?'Good afternoon':'Good evening')+', Parker.');
+  setEl('hdr-date', formatDate(now).toUpperCase());
+  const pct = Math.round(habitsDoneToday()/Math.max(1,habitsToday())*100);
+  setEl('hdr-score', pct+'%');
+  setEl('today-sub', `${habitsDoneToday()} of ${habitsToday()} habits done · ${big3Done(S.dailyBig3[todayKey()]||[])} of 3 Big 3 complete`);
+}
+
+// ══ TODAY ══
+function renderToday() {
+  renderHeader();
+  const today = todayKey();
+
+  // Stats
+  const b3 = S.dailyBig3[today];
+  const hDone = habitsDoneToday(), hTotal = habitsToday();
+  const activeGoals = S.goals.filter(g=>g.progress<100).length;
+  const tsEl = document.getElementById('today-stats'); if(tsEl) tsEl.innerHTML = `
+    <div class="stat"><span class="label">Habits</span><div class="stat-val">${hDone}<span style="font-size:15px;color:var(--ink3)">/${hTotal}</span></div><div class="stat-sub">${hTotal-hDone} remaining</div></div>
+    <div class="stat"><span class="label">Big 3</span><div class="stat-val">${big3Done(b3)}<span style="font-size:15px;color:var(--ink3)">/3</span></div><div class="stat-sub">tasks complete</div></div>
+    <div class="stat"><span class="label">Active goals</span><div class="stat-val">${activeGoals}</div><div class="stat-sub">in progress</div></div>
+    <div class="stat"><span class="label">Streak</span><div class="stat-val">${longestStreak()}<span style="font-size:13px;color:var(--ink3)">d</span></div><div class="stat-sub">longest active</div></div>
+  `;
+
+  renderBig3('daily-big3', b3, 'daily');
+
+  // Brain dump
+  document.getElementById('brain-dump').value = S.brainDump[today]||'';
+  document.getElementById('brain-dump').oninput = function() { S.brainDump[today]=this.value; save(); };
+
+  // Day planner
+  renderDayCalEvents();
+  const dpEl = document.getElementById('day-priorities');
+  if(dpEl) dpEl.value = S.dayPlan?.[today]?.priorities || '';
+
+  // Today's habits
+  const list = document.getElementById('today-habits-list');
+  if(!list) return;
+  if(!S.habits.length) {
+    list.innerHTML = '<div style="color:var(--ink3);font-size:13px;padding:10px 0 20px;">No habits yet. <button class="btn sm" onclick="nav(\'habits\',document.querySelectorAll(\'.nav-tab\')[1])">Create your first habit →</button></div>';
+  } else {
+    list.innerHTML = '';
+    S.habits.forEach(h=>{
+      const done = habitDoneToday(h.id);
+      const streak = habitStreakCount(h.id);
+      const div = document.createElement('div');
+      div.className = 'habit-card'+(done?' done-today':'');
+      div.style.marginBottom = '10px';
+      div.innerHTML = `
+        <div class="habit-top">
+          <div class="habit-check-big" onclick="toggleHabitToday('${h.id}')">${done?'✓':''}</div>
+          <div class="habit-info">
+            <div class="habit-name">${h.name}</div>
+            <div class="habit-meta">
+              ${streak>0?`<div class="habit-streak"><span style="font-size:14px;">🔥</span>${streak}d streak</div>`:''}
+              ${h.domain?`<div class="habit-domain-tag">${DOMAINS.find(d=>d.id===h.domain)?.name||h.domain}</div>`:''}
+            </div>
+          </div>
+        </div>
+      `;
+      list.appendChild(div);
+    });
+  }
+
+  // Reflection prompt
+  const p = DAILY_PROMPTS[promptIdx % DAILY_PROMPTS.length];
+  setEl('reflect-q', p.q);
+  setEl('reflect-src', p.src);
+  const rta=document.getElementById('daily-reflect-text'); if(rta) rta.value=S.dailyReflect[today]||'';
+  document.getElementById('daily-reflect-text').oninput = function() {
+    S.dailyReflect[today]=this.value; save();
+    const s=document.getElementById('reflect-saved'); s.style.opacity='1'; setTimeout(()=>s.style.opacity='0',2000);
+  };
+}
+
+function longestStreak() {
+  if(!S.habits.length) return 0;
+  return Math.max(0,...S.habits.map(h=>habitStreakCount(h.id)));
+}
+
+function toggleHabitToday(hid) {
+  if(!S.habitLog[hid]) S.habitLog[hid]={};
+  const today = todayKey();
+  S.habitLog[hid][today] = !S.habitLog[hid][today];
+  save(); renderToday();
+}
+
+function nextPrompt() {
+  promptIdx = (promptIdx+1)%DAILY_PROMPTS.length;
+  S.promptIdx[todayKey()] = promptIdx; save();
+  const p = DAILY_PROMPTS[promptIdx];
+  setEl('reflect-q', p.q);
+  setEl('reflect-src', p.src);
+}
+
+// ══ BIG 3 ══
+function renderBig3(containerId, arr, type) {
+  const wrap = document.getElementById(containerId);
+  if(!wrap) return;
+  wrap.innerHTML = '';
+  arr.forEach((item,i)=>{
+    const div = document.createElement('div');
+    div.className = 'big3-item'+(item.done?' done':'');
+    div.innerHTML = `
+      <div class="big3-num">${i+1}.</div>
+      <textarea class="big3-ta" rows="1" placeholder="What must get done ${type==='daily'?'today':'this week'}...">${item.t}</textarea>
+      <div class="big3-check" onclick="toggleBig3('${type}',${i})">${item.done?'✓':''}</div>
+    `;
+    const ta = div.querySelector('textarea');
+    ta.oninput = function() { arr[i].t=this.value; save(); autoH(this); };
+    setTimeout(()=>autoH(ta),0);
+    wrap.appendChild(div);
+  });
+}
+function autoH(el){el.style.height='auto';el.style.height=el.scrollHeight+'px';}
+function toggleBig3(type, idx) {
+  const today=todayKey(), wk=weekKey();
+  if(type==='daily'){S.dailyBig3[today][idx].done=!S.dailyBig3[today][idx].done;save();renderBig3('daily-big3',S.dailyBig3[today],'daily');renderHeader();}
+  else{S.weeklyBig3[wk][idx].done=!S.weeklyBig3[wk][idx].done;save();renderBig3('weekly-big3',S.weeklyBig3[wk],'weekly');}
+}
+
+// ══ HABITS PAGE ══
+function renderHabitsPage() {
+  const list = document.getElementById('habits-page-list');
+  if(!list) return;
+  const empty = document.getElementById('habits-empty');
+  if(!S.habits.length){list.innerHTML='';empty.style.display='block';return;}
+  empty.style.display='none'; list.innerHTML='';
+  S.habits.forEach(h=>{
+    const done = habitDoneToday(h.id);
+    const streak = habitStreakCount(h.id);
+    const weekDays = getWeekDays();
+    const log = S.habitLog[h.id]||{};
+    const domainColor = DOMAINS.find(d=>d.id===h.domain)?.color||'var(--gold)';
+
+    const card = document.createElement('div');
+    card.className = 'habit-card'+(done?' done-today':'');
+    card.style.borderLeft = `4px solid ${domainColor}`;
+
+    // Build 90-day heatmap
+    let heatmap = '';
+    const today = new Date();
+    for(let i=89;i>=0;i--){
+      const d=new Date(today); d.setDate(today.getDate()-i);
+      const k=`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+      const isToday = i===0;
+      let cls='hm-cell';
+      if(log[k]) cls+=' d4';
+      if(isToday) cls+=' today-hm';
+      heatmap+=`<div class="${cls}" title="${k}"></div>`;
+    }
+
+    // Week grid
+    let weekGrid = '';
+    const dayNames=['S','M','T','W','T','F','S'];
+    weekDays.forEach((d,i)=>{
+      const k=`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+      const isToday=k===todayKey();
+      const isDone=!!log[k];
+      weekGrid+=`
+        <div class="week-cell">
+          <div class="week-cell-day">${dayNames[i]}</div>
+          <div class="week-cell-box${isDone?' done':''}${isToday?' today-cell':''}" onclick="toggleHabitDay('${h.id}','${k}')">${isDone?'✓':''}</div>
+        </div>
+      `;
+    });
+
+    card.innerHTML = `
+      <div class="habit-top">
+        <div class="habit-check-big" onclick="toggleHabitToday('${h.id}');renderHabitsPage();">${done?'✓':''}</div>
+        <div class="habit-info">
+          <div class="habit-name">${h.name}</div>
+          <div class="habit-meta">
+            ${streak>0?`<div class="habit-streak"><span style="font-size:14px;">🔥</span>${streak}d streak</div>`:'<div style="font-size:12px;color:var(--ink4);">No streak yet</div>'}
+            ${h.domain?`<div class="habit-domain-tag">${DOMAINS.find(d=>d.id===h.domain)?.name||''}</div>`:''}
+            ${h.goalId?`<div class="habit-domain-tag" style="border-color:${domainColor};color:${domainColor};">↳ ${(S.goals.find(g=>g.id===h.goalId)||{}).title||'Goal'}</div>`:''}
+          </div>
+        </div>
+        <div class="habit-actions-row">
+          <button class="btn sm" onclick="openHabitModal('${h.id}')">Edit</button>
+          <button class="btn sm danger" onclick="deleteHabit('${h.id}')">Delete</button>
+        </div>
+      </div>
+      ${h.why?`<div style="font-size:12px;color:var(--ink3);font-style:italic;padding-left:38px;margin-bottom:12px;line-height:1.5;">${h.why}</div>`:''}
+      <div style="padding-left:0;">
+        <div class="label" style="margin-bottom:8px;">This week</div>
+        <div class="week-grid">${weekGrid}</div>
+        <div class="label" style="margin:14px 0 6px;">Last 90 days</div>
+        <div class="heatmap">${heatmap}</div>
+      </div>
+    `;
+    list.appendChild(card);
+  });
+}
+
+function toggleHabitDay(hid, key) {
+  if(!S.habitLog[hid]) S.habitLog[hid]={};
+  S.habitLog[hid][key]=!S.habitLog[hid][key];
+  save(); renderHabitsPage();
+}
+function deleteHabit(hid) {
+  if(!confirm('Delete this habit?')) return;
+  S.habits=S.habits.filter(h=>h.id!==hid); save(); renderHabitsPage();
+}
+
+// ══ HABIT MODAL ══
+function openHabitModal(hid) {
+  editingHabitId = hid||null;
+  populateDomainSelect('hm-domain');
+  populateGoalSelect('hm-goal');
+  if(hid){
+    const h=S.habits.find(x=>x.id===hid);
+    document.getElementById('hm-title').textContent='Edit habit';
+    document.getElementById('hm-name').value=h.name||'';
+    document.getElementById('hm-domain').value=h.domain||'';
+    document.getElementById('hm-goal').value=h.goalId||'';
+    document.getElementById('hm-why').value=h.why||'';
+  } else {
+    document.getElementById('hm-title').textContent='New habit';
+    document.getElementById('hm-name').value='';
+    document.getElementById('hm-domain').value='';
+    document.getElementById('hm-goal').value='';
+    document.getElementById('hm-why').value='';
+  }
+  openModal('habit-modal');
+}
+function saveHabit() {
+  const name=document.getElementById('hm-name').value.trim();
+  if(!name) return;
+  const habit={
+    id:editingHabitId||('h'+Date.now()),
+    name, domain:document.getElementById('hm-domain').value,
+    goalId:document.getElementById('hm-goal').value,
+    why:document.getElementById('hm-why').value.trim()
+  };
+  if(editingHabitId){S.habits=S.habits.map(h=>h.id===editingHabitId?habit:h);}
+  else{S.habits.push(habit);}
+  save(); closeModal('habit-modal'); renderHabitsPage();
+}
+
+// ══ GOALS PAGE ══
+function renderGoalsPage() {
+  const list=document.getElementById('goals-page-list');
+  if(!list) return;
+  const empty=document.getElementById('goals-empty');
+  if(!S.goals.length){list.innerHTML='';empty.style.display='block';return;}
+  empty.style.display='none'; list.innerHTML='';
+
+  // Group by domain
+  const grouped={};
+  S.goals.forEach(g=>{
+    if(!grouped[g.domain]) grouped[g.domain]=[];
+    grouped[g.domain].push(g);
+  });
+
+  DOMAINS.forEach(dom=>{
+    if(!grouped[dom.id]) return;
+    const section=document.createElement('div');
+    section.className='domain-group';
+    section.innerHTML=`<div class="domain-group-header"><div class="domain-dot" style="background:${dom.color}"></div><div class="domain-group-name">${dom.name}</div><div class="domain-goal-count">${grouped[dom.id].length} goal${grouped[dom.id].length>1?'s':''}</div></div>`;
+    grouped[dom.id].forEach(g=>section.appendChild(buildGoalCard(g,dom)));
+    list.appendChild(section);
+  });
+}
+
+function buildGoalCard(g, dom) {
+  const pct=g.progress||0;
+  const milestones=S.milestones[g.id]||[];
+  const msDone=milestones.filter(m=>m.done).length;
+  const daysLeft=g.date?Math.ceil((new Date(g.date)-new Date())/86400000):null;
+  const card=document.createElement('div');
+  card.className='goal-card';
+  card.style.setProperty('--domain-color',dom.color);
+
+  const smarter=[
+    {l:'S',label:'Specific',val:g.specific},
+    {l:'M',label:'Measurable',val:g.measurable},
+    {l:'A',label:'Actionable',val:g.actionable},
+    {l:'R',label:'Risky',val:g.risky},
+    {l:'T',label:'Time-keyed',val:g.timekeyed},
+    {l:'E',label:'Exciting',val:g.exciting},
+    {l:'R',label:'Relevant',val:g.relevant}
+  ].filter(x=>x.val);
+
+  const smarterHTML=smarter.length?`
+    <div class="goal-smarter">
+      ${smarter.map(s=>`
+        <div class="smarter-item">
+          <div class="smarter-label">${s.l} — ${s.label}</div>
+          <div class="smarter-val">${s.val}</div>
+        </div>`).join('')}
+    </div>`:'';
+
+  const msHTML=milestones.length?`
+    <div style="margin-bottom:14px;">
+      <div class="label" style="margin-bottom:8px;">Milestones <span style="color:var(--ink2);font-weight:500;">${msDone}/${milestones.length}</span></div>
+      ${milestones.map((m,i)=>`
+        <div class="milestone-row${m.done?' ms-done':''}">
+          <div class="milestone-check" onclick="toggleMilestone('${g.id}',${i})">${m.done?'✓':''}</div>
+          <div class="milestone-text">${m.text}</div>
+        </div>`).join('')}
+    </div>`:'';
+
+  card.innerHTML=`
+    <div class="goal-header">
+      <div class="goal-title-text">${g.title}</div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:5px;flex-shrink:0;">
+        ${daysLeft!==null?`<div style="font-family:'DM Mono',monospace;font-size:10px;color:${daysLeft<14?'var(--red)':'var(--ink3)'};">${daysLeft>0?daysLeft+'d left':'overdue'}</div>`:''}
+        <div style="display:flex;gap:6px;">
+          <button class="btn sm" onclick="openGoalModal('${g.id}')">Edit</button>
+          <button class="btn sm danger" onclick="deleteGoal('${g.id}')">Delete</button>
+        </div>
+      </div>
+    </div>
+    <div class="goal-badges">
+      <div class="badge domain" style="background:${dom.color};">${dom.name}</div>
+      ${g.date?`<div class="badge">${new Date(g.date).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}</div>`:''}
+      ${milestones.length?`<div class="badge">${msDone}/${milestones.length} milestones</div>`:''}
+    </div>
+    <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
+    <div class="progress-row">
+      <span>${pct}% complete</span>
+      <input type="range" min="0" max="100" value="${pct}" step="1" style="width:140px;accent-color:${dom.color};" oninput="updateGoalProgress('${g.id}',this.value,this.closest('.goal-card').querySelector('.progress-fill'),this.closest('.goal-card').querySelector('.progress-row span'))"/>
+    </div>
+    ${smarterHTML}
+    ${msHTML}
+    <div class="add-ms-row">
+      <input class="input" placeholder="Add a milestone..." id="ms-inp-${g.id}" style="flex:1;font-size:13px;padding:7px 11px;"/>
+      <button class="btn sm" onclick="addMilestone('${g.id}')">Add</button>
+    </div>
+  `;
+  return card;
+}
+
+function updateGoalProgress(gid, val, fillEl, labelEl) {
+  const g=S.goals.find(x=>x.id===gid);
+  if(!g) return;
+  g.progress=parseInt(val);
+  if(fillEl) fillEl.style.width=val+'%';
+  if(labelEl) labelEl.textContent=val+'% complete';
+  save();
+}
+
+function toggleMilestone(gid, idx) {
+  if(!S.milestones[gid]) S.milestones[gid]=[];
+  S.milestones[gid][idx].done=!S.milestones[gid][idx].done;
+  save(); renderGoalsPage();
+}
+
+function addMilestone(gid) {
+  const inp=document.getElementById(`ms-inp-${gid}`);
+  const text=inp.value.trim(); if(!text) return;
+  if(!S.milestones[gid]) S.milestones[gid]=[];
+  S.milestones[gid].push({text,done:false});
+  inp.value=''; save(); renderGoalsPage();
+}
+
+function deleteGoal(gid) {
+  if(!confirm('Delete this goal?')) return;
+  S.goals=S.goals.filter(g=>g.id!==gid);
+  delete S.milestones[gid];
+  save(); renderGoalsPage();
+}
+
+// ══ GOAL MODAL ══
+function openGoalModal(gid) {
+  editingGoalId=gid||null;
+  modalMilestones=[];
+  populateDomainSelect('gm-domain');
+  document.getElementById('gm-title').textContent=gid?'Edit goal':'New SMARTER goal';
+  if(gid){
+    const g=S.goals.find(x=>x.id===gid);
+    document.getElementById('gm-title-input').value=g.title||'';
+    document.getElementById('gm-domain').value=g.domain||'spiritual';
+    document.getElementById('gm-date').value=g.date||'';
+    document.getElementById('gm-specific').value=g.specific||'';
+    document.getElementById('gm-measurable').value=g.measurable||'';
+    document.getElementById('gm-actionable').value=g.actionable||'';
+    document.getElementById('gm-risky').value=g.risky||'';
+    document.getElementById('gm-timekeyed').value=g.timekeyed||'';
+    document.getElementById('gm-exciting').value=g.exciting||'';
+    document.getElementById('gm-relevant').value=g.relevant||'';
+    document.getElementById('gm-progress').value=g.progress||0;
+    document.getElementById('gm-pct-label').textContent=(g.progress||0)+'%';
+    modalMilestones=[...(S.milestones[gid]||[])];
+  } else {
+    ['gm-title-input','gm-specific','gm-measurable','gm-actionable','gm-risky','gm-timekeyed','gm-exciting','gm-relevant'].forEach(id=>document.getElementById(id).value='');
+    document.getElementById('gm-date').value='';
+    document.getElementById('gm-domain').value='spiritual';
+    document.getElementById('gm-progress').value=0;
+    document.getElementById('gm-pct-label').textContent='0%';
+  }
+  renderModalMilestones();
+  openModal('goal-modal');
+}
+
+function renderModalMilestones() {
+  const list=document.getElementById('gm-milestones-list');
+  if(!list) return;
+  list.innerHTML='';
+  modalMilestones.forEach((m,i)=>{
+    const row=document.createElement('div');
+    row.style.cssText='display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--border);';
+    row.innerHTML=`<div style="flex:1;font-size:13px;color:var(--ink);">${m.text}</div><button class="btn sm danger" onclick="removeModalMilestone(${i})">×</button>`;
+    list.appendChild(row);
+  });
+}
+
+function addModalMilestone() {
+  const inp=document.getElementById('gm-ms-input');
+  const t=inp.value.trim(); if(!t) return;
+  modalMilestones.push({text:t,done:false});
+  inp.value=''; renderModalMilestones();
+}
+
+function removeModalMilestone(i) {
+  modalMilestones.splice(i,1); renderModalMilestones();
+}
+
+function saveGoal() {
+  const title=document.getElementById('gm-title-input').value.trim();
+  if(!title) return;
+  const goal={
+    id:editingGoalId||('g'+Date.now()),
+    title, domain:document.getElementById('gm-domain').value,
+    date:document.getElementById('gm-date').value,
+    specific:document.getElementById('gm-specific').value.trim(),
+    measurable:document.getElementById('gm-measurable').value.trim(),
+    actionable:document.getElementById('gm-actionable').value.trim(),
+    risky:document.getElementById('gm-risky').value.trim(),
+    timekeyed:document.getElementById('gm-timekeyed').value.trim(),
+    exciting:document.getElementById('gm-exciting').value.trim(),
+    relevant:document.getElementById('gm-relevant').value.trim(),
+    progress:parseInt(document.getElementById('gm-progress').value)||0
+  };
+  if(editingGoalId){S.goals=S.goals.map(g=>g.id===editingGoalId?goal:g);}
+  else{S.goals.push(goal);}
+  S.milestones[goal.id]=modalMilestones;
+  save(); closeModal('goal-modal'); renderGoalsPage();
+}
+
+// ══ REFLECT PAGE ══
+function renderReflect() {
+  const wrap=document.getElementById('daily-review-list');
+  if(!wrap) return;
+  wrap.innerHTML='';
+  const today=todayKey();
+  DAILY_REVIEW_Qs.forEach((q,i)=>{
+    const div=document.createElement('div');
+    div.className='card'; div.style.marginBottom='12px';
+    div.innerHTML=`
+      <div class="prompt-block" style="margin-bottom:10px;">
+        <div class="prompt-q">${q.q}</div>
+        <div class="prompt-src">${q.src}</div>
+      </div>
+      <textarea class="input" style="width:100%;" placeholder="Your answer..." id="dr-${i}">${S.dailyReview[today]?.[i]||''}</textarea>
+    `;
+    wrap.appendChild(div);
+    setTimeout(()=>{
+      const ta=document.getElementById(`dr-${i}`);
+      if(ta){ta.oninput=function(){if(!S.dailyReview[today])S.dailyReview[today]={};S.dailyReview[today][i]=this.value;save();};}
+    },0);
+  });
+}
+
+// ══ WEEK PAGE ══
+function renderWeek() {
+  const wk=weekKey(), now=new Date();
+  const weekDays=getWeekDays();
+  const dayNames=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+
+  const grid=document.getElementById('week-score-grid');
+  if(!grid) return;
+  grid.innerHTML='';
+  weekDays.forEach((d,i)=>{
+    const k=`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+    const isToday=k===todayKey();
+    const hasPast=d<=now;
+    let score='—';
+    if(hasPast&&S.habits.length){
+      const done=S.habits.filter(h=>(S.habitLog[h.id]||{})[k]).length;
+      score=Math.round(done/S.habits.length*100)+'%';
+    }
+    grid.innerHTML+=`
+      <div class="wsg-cell${isToday?' wsg-today':''}">
+        <div class="wsg-day">${dayNames[i]}</div>
+        <div class="wsg-score">${score}</div>
+      </div>
+    `;
+  });
+
+  renderBig3('weekly-big3',S.weeklyBig3[wk],'weekly');
+
+  const wkWrap=document.getElementById('weekly-review-list');
+  if(!wkWrap) return;
+  wkWrap.innerHTML='';
+  WEEKLY_Qs.forEach((q,i)=>{
+    const div=document.createElement('div');
+    div.className='card'; div.style.marginBottom='12px';
+    div.innerHTML=`
+      <div class="prompt-block" style="margin-bottom:10px;">
+        <div class="prompt-q">${q.q}</div>
+        <div class="prompt-src">${q.src}</div>
+      </div>
+      <textarea class="input" style="width:100%;" placeholder="Your reflection..." id="wr-${i}">${S.weeklyReview[wk]?.[i]||''}</textarea>
+    `;
+    wrap.appendChild(div);
+    setTimeout(()=>{
+      const ta=document.getElementById(`wr-${i}`);
+      if(ta){ta.oninput=function(){if(!S.weeklyReview[wk])S.weeklyReview[wk]={};S.weeklyReview[wk][i]=this.value;save();};}
+    },0);
+  });
+}
+
+// ══ RENDER MAP ══
+const renders={today:renderToday,habits:renderHabitsPage,goals:renderGoalsPage,reflect:renderReflect,week:renderWeek,fitness:renderFitness,devotional:renderDevotional};
+
+// ══ HELPER: SELECTS ══
+function populateDomainSelect(id) {
+  const sel=document.getElementById(id);
+  const hasEmpty=sel.querySelector('option[value=""]');
+  sel.innerHTML=(hasEmpty?'<option value="">— None —</option>':'')+DOMAINS.map(d=>`<option value="${d.id}">${d.name}</option>`).join('');
+}
+
+function populateGoalSelect(id) {
+  const sel=document.getElementById(id);
+  sel.innerHTML='<option value="">— None —</option>'+S.goals.map(g=>`<option value="${g.id}">${g.title}</option>`).join('');
+}
+
+// ══ MODALS ══
+function openModal(id){document.getElementById(id).classList.add('open');}
+function closeModal(id){document.getElementById(id).classList.remove('open');}
+document.querySelectorAll('.overlay').forEach(o=>{o.addEventListener('click',function(e){if(e.target===this)closeModal(this.id);});});
+
+// ══ BRAIN DUMP AI ══
+async function brainDumpAI(){
+  const dump=document.getElementById('brain-dump').value.trim();
+  if(!dump){alert('Add something to your brain dump first.');return;}
+  const wrap=document.getElementById('brain-dump-ai');
+  const el=document.getElementById('brain-dump-ai-text');
+  wrap.style.display='block'; el.className='ai-text loading'; el.textContent='Reading your brain dump...';
+  const b3=S.dailyBig3[todayKey()].map((x,i)=>`${i+1}. ${x.t||'(blank)'} [${x.done?'done':'not done'}]`).join(', ');
+  const goals=S.goals.slice(0,5).map(g=>`${g.title} (${g.progress||0}%)`).join('; ');
+  const prompt=`You are a productivity coach for Parker Nelson — Christian, enterprise AE at Workday in Frisco TX, dad, in a deliberate building season. He uses Michael Hyatt and Stephen Covey frameworks.\n\nHis Daily Big 3: ${b3}.\n${goals?`Active goals: ${goals}`:''}.\n\nBrain dump:\n"${dump}"\n\nYour job:\n1. Quickly categorize what's in the dump (tasks, worries, ideas, decisions, noise)\n2. Identify the 1–2 most important things needing action\n3. Flag what can be deleted, delegated, or deferred\n4. Give 2–3 sharp, concrete next actions\n5. Note anything that conflicts with or belongs in his Big 3\n\nBe direct, warm, concise. Use Hyatt/Covey language naturally. Write in short paragraphs, not bullet soup.`;
+  await callClaude(prompt, el);
+}
+
+// ══ COACHING AI ══
+async function coachAI(type) {
+  const wrapId={daily:'daily-coach-ai',review:'review-coach-ai',weekly:'weekly-coach-ai'}[type];
+  const textId={daily:'daily-coach-text',review:'review-coach-text',weekly:'weekly-coach-text'}[type];
+  const wrap=document.getElementById(wrapId), el=document.getElementById(textId);
+  wrap.style.display='block'; el.className='ai-text loading'; el.textContent='Generating coaching insight...';
+
+  const today=todayKey(), wk=weekKey();
+  const hDone=habitsDoneToday(), hTotal=habitsToday();
+  const pct=Math.round(hDone/Math.max(1,hTotal)*100);
+  const goalsSummary=S.goals.map(g=>`${g.title} (${DOMAINS.find(d=>d.id===g.domain)?.name}, ${g.progress||0}%)`).join('; ');
+
+  let prompt='';
+  if(type==='daily'){
+    const p=DAILY_PROMPTS[promptIdx%DAILY_PROMPTS.length];
+    const reflect=S.dailyReflect[today]||'';
+    const b3=S.dailyBig3[today].map((x,i)=>`${i+1}. ${x.t||'blank'} [${x.done?'done':'not done'}]`).join(', ');
+    prompt=`You are a life coach for Parker Nelson — Christian, enterprise AE at Workday in Frisco TX, dad, building intentionally from survival to purpose. He uses Michael Hyatt's Full Focus framework.\n\nToday: ${hDone}/${hTotal} habits done (${pct}%). Big 3: ${b3}.\nGoals: ${goalsSummary||'none yet'}.\nReflection prompt: "${p.q}"\nHis reflection: "${reflect||'(not written)'}"\n\nWrite a 2–3 sentence coaching insight grounded in faith and the Hyatt framework. Be direct, warm. End with one sharp action for today.`;
+  } else if(type==='review') {
+    const answers=DAILY_REVIEW_Qs.map((q,i)=>`Q: ${q.q}\nA: ${S.dailyReview[today]?.[i]||'(blank)'}`).join('\n\n');
+    prompt=`Parker Nelson's daily review. Habits: ${hDone}/${hTotal}. Goals: ${goalsSummary||'none'}.\n\n${answers}\n\nWrite a 3–4 sentence coaching summary. Identify one pattern, one strength, one growth edge. Use Hyatt's Full Focus framework. Faith-anchored, direct.`;
+  } else {
+    const answers=WEEKLY_Qs.map((q,i)=>`Q: ${q.q}\nA: ${S.weeklyReview[wk]?.[i]||'(blank)'}`).join('\n\n');
+    const wb3=S.weeklyBig3[wk].map((x,i)=>`${i+1}. ${x.t||'blank'} [${x.done?'done':'not done'}]`).join(', ');
+    prompt=`Parker Nelson's weekly review. Weekly Big 3: ${wb3}. Goals: ${goalsSummary||'none'}.\n\n${answers}\n\nWrite a 4–5 sentence weekly coaching summary. Identify his biggest win, biggest blind spot, and top priority next week. Apply Hyatt's Full Focus Planner philosophy. End with a challenge question for next week.`;
+  }
+  await callClaude(prompt, el);
+}
+
+async function callClaude(prompt, el) {
+  try {
+    const res=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',headers:{'Content-Type':'application/json','x-api-key':'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','anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+      body:JSON.stringify({model:'claude-sonnet-4-5',max_tokens:1000,messages:[{role:'user',content:prompt}]})
+    });
+    const data=await res.json();
+    const text=data.content?.find(b=>b.type==='text')?.text||'Unable to generate response.';
+    el.className='ai-text'; el.textContent=text;
+  } catch(e){
+    el.className='ai-text'; el.textContent='Could not reach Claude. Check your connection and try again.';
+  }
+}
+
+
+// ══ FITNESS STATE ══
+const MUSCLES = ['Chest','Back','Shoulders','Biceps','Triceps','Legs','Quads','Hamstrings','Glutes','Calves','Abs','Cardio','Full Body'];
+const FEEL_EMOJI = {'Crushed it':'💪','Solid':'✅','Average':'😐','Struggled':'😓','Active recovery':'🧘'};
+const MACRO_COLORS = {cal:'#9a7b2e',protein:'#2a6644',carbs:'#1a5276',fat:'#6d4fa0',water:'#1a7a8a'};
+let selectedFeel = '';
+
+function fitLoad() {
+  if(!S.workouts) S.workouts = [];
+  if(!S.macros) S.macros = {};
+  if(!S.macroTargets) S.macroTargets = {cal:2800,protein:220,carbs:280,fat:80,water:128};
+}
+
+function saveMacros() {
+  const today = todayKey();
+  if(!S.macros[today]) S.macros[today] = {};
+  S.macros[today].cal     = parseFloat(document.getElementById('m-cal').value)||0;
+  S.macros[today].protein = parseFloat(document.getElementById('m-protein').value)||0;
+  S.macros[today].carbs   = parseFloat(document.getElementById('m-carbs').value)||0;
+  S.macros[today].fat     = parseFloat(document.getElementById('m-fat').value)||0;
+  S.macros[today].water   = parseFloat(document.getElementById('m-water').value)||0;
+  save(); renderMacroBars();
+}
+
+function saveTargets() {
+  S.macroTargets = {
+    cal:    parseFloat(document.getElementById('t-cal').value)||2800,
+    protein:parseFloat(document.getElementById('t-protein').value)||220,
+    carbs:  parseFloat(document.getElementById('t-carbs').value)||280,
+    fat:    parseFloat(document.getElementById('t-fat').value)||80,
+    water:  parseFloat(document.getElementById('t-water').value)||128
+  };
+  const t = S.macroTargets;
+  const units = {cal:'kcal', protein:'g', carbs:'g', fat:'g', water:'oz'};
+  Object.entries(units).forEach(([k, u]) => {
+    const el = document.getElementById('tgt-'+k);
+    if(el) el.textContent = 'goal: '+t[k]+' '+u;
+  });
+  save(); renderMacroBars();
+}
+
+function renderMacroBars() {
+  const today = todayKey();
+  const m = S.macros[today] || {};
+  const t = S.macroTargets;
+  const fields = [
+    {key:'cal',    label:'Calories', unit:'kcal'},
+    {key:'protein',label:'Protein',  unit:'g'},
+    {key:'carbs',  label:'Carbs',    unit:'g'},
+    {key:'fat',    label:'Fat',      unit:'g'},
+    {key:'water',  label:'Water',    unit:'oz'}
+  ];
+  const wrap = document.getElementById('macro-bars');
+  if(!wrap) return;
+  wrap.innerHTML = fields.map(f => {
+    const val = m[f.key]||0, goal = t[f.key]||1;
+    const pct = Math.min(100, Math.round(val/goal*100));
+    const over = val > goal;
+    return `<div class="macro-bar-wrap">
+      <div class="macro-bar-label">
+        <span>${f.label}</span>
+        <span style="font-family:'DM Mono',monospace;font-size:10px;color:${over?'var(--red)':'var(--ink3)'};">${val} / ${goal} ${f.unit} (${pct}%)</span>
+      </div>
+      <div class="macro-bar-track"><div class="macro-bar-fill" style="width:${pct}%;background:${over?'var(--red)':MACRO_COLORS[f.key]};"></div></div>
+    </div>`;
+  }).join('');
+}
+
+let calViewYear = new Date().getFullYear();
+let calViewMonth = new Date().getMonth();
+let targetEditOpen = false;
+
+function toggleTargetEdit() {
+  targetEditOpen = !targetEditOpen;
+  document.getElementById('macro-targets-edit').style.display = targetEditOpen ? 'block' : 'none';
+  setEl('target-edit-btn', targetEditOpen ? 'Done' : 'Edit targets');
+}
+
+// renderTargetDisplay removed — labels now inline
+
+function renderFitnessCalendar() {
+  const year = calViewYear, month = calViewMonth;
+  const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  setEl('cal-month-label', months[month] + ' ' + year);
+  const firstDay = new Date(year, month, 1).getDay();
+  const daysInMonth = new Date(year, month+1, 0).getDate();
+  const today = todayKey();
+  const workoutDays = new Set(S.workouts.filter(w=>w.dateKey&&w.dateKey.startsWith(`${year}-${pad(month+1)}`)).map(w=>w.dateKey));
+  const macroDays = new Set(Object.entries(S.macros||{}).filter(([k,v])=>k.startsWith(`${year}-${pad(month+1)}`)&&(v.cal||v.protein||v.carbs||v.fat)).map(([k])=>k));
+
+  let html = '<div class="fit-cal"><div class="fit-cal-header">';
+  ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].forEach(d=>{ html+=`<div class="fit-cal-dayname">${d}</div>`; });
+  html += '</div><div class="fit-cal-grid">';
+  for(let i=0;i<firstDay;i++) html+='<div class="fit-cal-cell empty"></div>';
+  const nowDate = new Date();
+  for(let d=1;d<=daysInMonth;d++) {
+    const key = `${year}-${pad(month+1)}-${pad(d)}`;
+    const isToday = key===today;
+    const isFuture = new Date(year,month,d) > nowDate;
+    const hasW = workoutDays.has(key);
+    const hasM = macroDays.has(key);
+    const macroData = S.macros[key];
+    let cls = 'fit-cal-cell';
+    if(isToday) cls+=' today-cal';
+    if(isFuture) cls+=' future';
+    if(hasW||hasM) cls+=' has-data';
+    let dots = '';
+    if(hasW&&hasM) dots+=`<div class="cal-dot cal-dot-b"></div>`;
+    else if(hasW) dots+=`<div class="cal-dot cal-dot-w"></div>`;
+    else if(hasM) dots+=`<div class="cal-dot cal-dot-m"></div>`;
+    const macroMini = macroData&&(macroData.cal||macroData.protein) ? `<div class="cal-macro-mini">${macroData.cal||0}c ${macroData.protein||0}g</div>` : '';
+    const ws = S.workouts.filter(w=>w.dateKey===key);
+    const wLabel = ws.length ? `<div class="cal-macro-mini" style="color:var(--green);white-space:nowrap;overflow:hidden;">${ws.map(w=>w.muscle).join(', ')}</div>` : '';
+    html+=`<div class="${cls}" onclick="showCalDrawer('${key}')">
+      <div class="cal-day-num">${d}</div>
+      <div class="cal-dots">${dots}</div>
+      ${wLabel}${macroMini}
+    </div>`;
+  }
+  html += '</div></div>';
+  const fcEl=document.getElementById('fitness-calendar'); if(fcEl) fcEl.innerHTML=html;
+  // Re-render drawer if open for a day in this month
+  const drawer = document.getElementById('cal-drawer');
+  if(drawer&&drawer.style.display!=='none'&&drawer.dataset.key&&drawer.dataset.key.startsWith(`${year}-${pad(month+1)}`)) {
+    showCalDrawer(drawer.dataset.key);
+  }
+}
+
+function showCalDrawer(key) {
+  const drawerEl = document.getElementById('cal-drawer');
+  if(!drawerEl) return;
+  const ws = S.workouts.filter(w=>w.dateKey===key);
+  const m = S.macros[key];
+  const t = S.macroTargets;
+  const d = new Date(key+'T12:00:00');
+  const label = d.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'});
+
+  if(!ws.length && !m) {
+    drawerEl.style.display='none';
+    drawerEl.dataset.key='';
+    return;
+  }
+
+  drawerEl.dataset.key = key;
+  drawerEl.style.display = 'block';
+
+  const workoutHTML = ws.length ? ws.map(w=>`
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;padding:10px 12px;background:var(--surface);border-radius:8px;margin-bottom:8px;">
+      <div>
+        <div style="font-size:14px;font-weight:600;color:var(--ink);margin-bottom:3px;">${w.muscle}</div>
+        <div class="workout-feel" style="margin:0;">${FEEL_EMOJI[w.feel]||''} ${w.feel}</div>
+        ${w.notes?`<div style="font-size:12px;color:var(--ink3);font-style:italic;margin-top:5px;">${w.notes}</div>`:''}
+      </div>
+      <button class="btn sm danger" onclick="deleteWorkoutByTs(${w.ts})">Delete</button>
+    </div>`).join('') : '<div style="font-size:13px;color:var(--ink3);">No workout logged.</div>';
+
+  const fields=[{k:'cal',l:'Calories',u:'kcal'},{k:'protein',l:'Protein',u:'g'},{k:'carbs',l:'Carbs',u:'g'},{k:'fat',l:'Fat',u:'g'},{k:'water',l:'Water',u:'oz'}];
+  const macroHTML = m ? fields.map(f=>{
+    const val=m[f.k]||0, goal=t[f.k]||1, pct=Math.min(100,Math.round(val/goal*100));
+    return `<div class="cal-macro-row"><span>${f.l}</span><span style="font-family:'DM Mono',monospace;font-size:11px;">${val} / ${goal} ${f.u} <span style="color:var(--ink4);">(${pct}%)</span></span></div>`;
+  }).join('') : '<div style="font-size:13px;color:var(--ink3);">No macros logged.</div>';
+
+  drawerEl.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid var(--border);">
+      <div class="cal-drawer-date">${label}</div>
+      <button class="btn sm" onclick="document.getElementById('cal-drawer').style.display='none'">Close ×</button>
+    </div>
+    <div class="cal-drawer-section">Training</div>
+    ${workoutHTML}
+    <div class="cal-drawer-section" style="margin-top:16px;">Nutrition</div>
+    ${macroHTML}
+  `;
+}
+
+function calNav(dir) {
+  calViewMonth += dir;
+  if(calViewMonth > 11) { calViewMonth=0; calViewYear++; }
+  if(calViewMonth < 0)  { calViewMonth=11; calViewYear--; }
+  renderFitnessCalendar();
+}
+
+function renderFitness() {
+  fitLoad();
+  const today = todayKey();
+  const m = S.macros[today] || {};
+  const t = S.macroTargets;
+
+  // Load target inputs (in edit panel)
+  const tFields = {cal:2800, protein:220, carbs:280, fat:80, water:128};
+  Object.entries(tFields).forEach(([k, def]) => {
+    const el = document.getElementById('t-'+k);
+    if(el) el.value = t[k]||def;
+  });
+
+  // Update target labels under each input
+  const units = {cal:'kcal', protein:'g', carbs:'g', fat:'g', water:'oz'};
+  Object.entries(tFields).forEach(([k, def]) => {
+    const el = document.getElementById('tgt-'+k);
+    if(el) el.textContent = 'goal: '+(t[k]||def)+' '+units[k];
+  });
+
+  setEl('macro-date-label', today);
+  ['cal','protein','carbs','fat','water'].forEach(k => {
+    const el = document.getElementById('m-'+k);
+    if(el) el.value = m[k]||'';
+  });
+  renderMacroBars();
+  renderFitnessCalendar();
+
+  // Backfill missing timestamps on old workout records
+  S.workouts.forEach((w, i) => { if(!w.ts) { w.ts = Date.now() + i; } });
+  save();
+
+  // Workout log
+  const list = document.getElementById('workout-log-list');
+  const empty = document.getElementById('workout-empty');
+  const workouts = [...S.workouts].reverse();
+  if(!workouts.length){ list.innerHTML=''; empty.style.display='block'; }
+  else {
+    empty.style.display='none'; list.innerHTML='';
+    workouts.slice(0,60).forEach((w) => {
+      const card = document.createElement('div');
+      card.className = 'workout-card';
+      const ts = w.ts;
+      card.innerHTML = `
+        <div class="workout-header">
+          <div>
+            <div class="workout-muscle">${w.muscle}</div>
+            <div class="workout-feel">${FEEL_EMOJI[w.feel]||''} ${w.feel}</div>
+            ${w.notes?`<div style="font-size:12px;color:var(--ink3);margin-top:8px;font-style:italic;line-height:1.5;">${w.notes}</div>`:''}
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px;">
+            <div class="workout-date">${w.date}</div>
+            <button class="btn sm danger" onclick="deleteWorkoutByTs(${ts})">Delete</button>
+          </div>
+        </div>
+      `;
+      list.appendChild(card);
+    });
+  }
+
+  // Muscle week grid
+  const weekDays = getWeekDays();
+  const weekKeys = new Set(weekDays.map(d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`));
+  const trainedThisWeek = new Set(
+    S.workouts.filter(w=>weekKeys.has(w.dateKey)).flatMap(w=>w.muscles||[w.muscle])
+  );
+  const grid = document.getElementById('muscle-week-grid');
+  if(!grid) return;
+  grid.innerHTML = MUSCLES.map(m => `<div class="muscle-chip${trainedThisWeek.has(m)?' trained':''}">${m}</div>`).join('');
+}
+
+function openWorkoutModal() {
+  selectedFeel = '';
+  document.getElementById('wm-notes').value = '';
+  document.getElementById('wm-muscle-error').style.display = 'none';
+  document.querySelectorAll('.muscle-sel-btn').forEach(b=>b.classList.remove('sel'));
+  document.querySelectorAll('.feel-btn').forEach(b=>b.classList.remove('selected'));
+  openModal('workout-modal');
+}
+
+function toggleMuscleBtn(btn) {
+  btn.classList.toggle('sel');
+}
+
+function getSelectedMuscles() {
+  return [...document.querySelectorAll('.muscle-sel-btn.sel')].map(b=>b.dataset.muscle);
+}
+
+function selectFeel(val) {
+  selectedFeel = val;
+  document.querySelectorAll('.feel-btn').forEach(b=>{
+    b.classList.toggle('selected', b.textContent.includes(val));
+  });
+}
+
+function saveWorkout() {
+  const muscles = getSelectedMuscles();
+  const errEl = document.getElementById('wm-muscle-error');
+  if(!muscles.length){ errEl.style.display='block'; return; }
+  errEl.style.display='none';
+  if(!selectedFeel){ alert('Please select how the workout felt.'); return; }
+  const today = todayKey();
+  const now = new Date();
+  S.workouts.push({
+    muscle: muscles.join(' + '),
+    muscles: muscles,
+    feel: selectedFeel,
+    notes: document.getElementById('wm-notes').value.trim(),
+    date: now.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}),
+    dateKey: today,
+    ts: Date.now()
+  });
+  save(); closeModal('workout-modal'); renderFitness();
+}
+
+function deleteWorkout(idx) {
+  if(!confirm('Delete this workout log?')) return;
+  S.workouts.splice(idx,1); save(); renderFitness();
+}
+function deleteWorkoutByTs(ts) {
+  if(!confirm('Delete this workout?')) return;
+  if(ts) {
+    // Modern records with a timestamp
+    S.workouts = S.workouts.filter(w=>w.ts!==ts);
+  } else {
+    // Old records without ts — remove first match with no ts
+    const idx = S.workouts.findIndex(w=>!w.ts);
+    if(idx > -1) S.workouts.splice(idx, 1);
+  }
+  save(); renderFitness();
+  const drawer = document.getElementById('cal-drawer');
+  if(drawer && drawer.style.display!=='none') {
+    const key = drawer.dataset.key;
+    if(key) showCalDrawer(key);
+  }
+}
+
+// ── FITNESS AI ──
+function buildFitnessContext() {
+  const today = todayKey();
+  const m = S.macros[today]||{};
+  const t = S.macroTargets;
+  const recent = S.workouts.slice(-10).map(w=>`${w.date}: ${w.muscle} — ${w.feel}${w.notes?' ('+w.notes+')':''}`).join('; ');
+  const weekDays = getWeekDays();
+  const weekKeys = new Set(weekDays.map(d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`));
+  const thisWeek = S.workouts.filter(w=>weekKeys.has(w.dateKey)).map(w=>w.muscle).join(', ')||'none yet';
+  return `Parker Nelson — 30s, Christian, enterprise sales professional in Frisco TX. He trains FST-7 (Fascia Stretch Training 7) — a bodybuilding protocol using compound movements followed by 7 sets of a stretching isolation exercise with short rest periods to maximize muscle pump and fascia expansion.
+
+Today's macros: ${m.cal||0}/${t.cal} kcal, ${m.protein||0}/${t.protein}g protein, ${m.carbs||0}/${t.carbs}g carbs, ${m.fat||0}/${t.fat}g fat, ${m.water||0}/${t.water}oz water.
+This week's training: ${thisWeek}.
+Recent sessions: ${recent||'none logged yet'}.`;
+}
+
+function fitnessQuickPrompt(type) {
+  const ctx = buildFitnessContext();
+  const prompts = {
+    macros: `${ctx}
+
+Analyze today's macros. Is he on track? What should he adjust for the rest of the day? Be specific about protein and calorie gaps. Keep it practical and direct.`,
+    week:   `${ctx}
+
+Review his training this week. Is he hitting all major muscle groups? Any imbalances? What should he train next for optimal recovery and FST-7 progression? Be concise and specific.`,
+    fst7:   `${ctx}
+
+Give him one actionable FST-7 coaching tip based on his recent training pattern — technique, pump, exercise selection, or rest periods. Keep it under 100 words and make it immediately applicable.`,
+    recovery:`${ctx}
+
+Assess his recovery needs based on recent training. What muscles need rest? Any nutrition adjustments to support recovery? Any sleep or hydration flags? 2-3 specific, practical recommendations.`
+  };
+  runFitnessAI(prompts[type]);
+}
+
+function fitnessCustomAI() {
+  const q = document.getElementById('fitness-ai-input').value.trim();
+  if(!q){ alert('Enter a question first.'); return; }
+  const ctx = buildFitnessContext();
+  runFitnessAI(`${ctx}
+
+User question: ${q}
+
+Answer directly and specifically based on his actual data above. Be a knowledgeable fitness coach — practical, evidence-based, no generic advice.`);
+}
+
+async function runFitnessAI(prompt) {
+  const panel = document.getElementById('fitness-ai-panel');
+  const el = document.getElementById('fitness-ai-text');
+  panel.style.display = 'block'; el.className='ai-text loading'; el.textContent='Thinking...';
+  await callClaude(prompt, el);
+}
+
+
+// ══ DEVOTIONAL ══
+function devLoad() {
+  if(!S.devotionals) S.devotionals = {};
+}
+
+function renderDevotional() {
+  devLoad();
+  const today = todayKey();
+  setEl('dev-date-label', today);
+  const saved = S.devotionals[today];
+  if(saved) {
+    displayDevotional(saved);
+    loadDevAnswers(today);
+    if(saved.feedback) {
+      document.getElementById('dev-feedback-wrap').style.display='block';
+      document.getElementById('dev-feedback-text').textContent = saved.feedback;
+    }
+  }
+  renderDevHistory();
+}
+
+function displayDevotional(d) {
+  const dswEl=document.getElementById('dev-scripture-wrap'); if(!dswEl) return; dswEl.innerHTML = `
+    <div class="scripture-block">${d.scripture}</div>
+    <div class="scripture-ref">${d.reference} (NLT)</div>
+    ${d.context?`<div style="font-size:13px;color:var(--ink3);margin-top:10px;line-height:1.6;">${d.context}</div>`:''}
+  `;
+  document.getElementById('dev-q1').textContent = d.q1||'';
+  document.getElementById('dev-q2').textContent = d.q2||'';
+  document.getElementById('dev-q3').textContent = d.q3||'';
+  const dqw=document.getElementById('dev-questions-wrap'); if(dqw) dqw.style.display='block';
+}
+
+function loadDevAnswers(today) {
+  const d = S.devotionals[today];
+  if(!d) return;
+  ['a1','a2','a3'].forEach(k=>{ const el=document.getElementById('dev-'+k); if(el) el.value=d[k]||''; });
+}
+
+async function loadDevotional() {
+  const wrap = document.getElementById('dev-scripture-wrap');
+  if(!wrap) return;
+  wrap.innerHTML = '<div style="color:var(--ink3);font-style:italic;font-size:13px;">Loading today\'s scripture...</div>';
+  const dqwH=document.getElementById('dev-questions-wrap'); if(dqwH) dqwH.style.display='none';
+  const dfwH=document.getElementById('dev-feedback-wrap'); if(dfwH) dfwH.style.display='none';
+
+  const today = todayKey();
+  const d = new Date();
+  const dateStr = d.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'});
+  const prompt = `You are generating a daily Christian devotional for Parker Nelson — a man of deep faith, enterprise professional, father, living in Frisco TX. Today is ${dateStr}.
+
+Choose a passage from the NLT (New Living Translation) Bible that is spiritually meaningful, seasonally appropriate, and speaks into themes of faith, purpose, fatherhood, integrity, or perseverance. Choose from a wide variety of books — Old and New Testament.
+
+Respond ONLY with valid JSON in this exact format (no markdown, no code fences, no extra text):
+{
+  "reference": "Book Chapter:Verse-Verse",
+  "scripture": "The full scripture text in NLT translation",
+  "context": "2-3 sentences of spiritual context — what was happening, why it matters, how it speaks today",
+  "q1": "First reflection question — personal and specific to the passage",
+  "q2": "Second reflection question — application to daily life, work, or relationships",
+  "q3": "Third reflection question — faith formation, character, or long-term growth"
+}`;
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST', headers:{'Content-Type':'application/json','x-api-key':'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','anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+      body: JSON.stringify({model:'claude-sonnet-4-5',max_tokens:1000,messages:[{role:'user',content:prompt}]})
+    });
+    const data = await res.json();
+    const raw = data.content?.find(b=>b.type==='text')?.text||'';
+    const clean = raw.replace(/```json|```/g,'').trim();
+    const parsed = JSON.parse(clean);
+    if(!S.devotionals[today]) S.devotionals[today]={};
+    Object.assign(S.devotionals[today], parsed);
+    save();
+    displayDevotional(S.devotionals[today]);
+    loadDevAnswers(today);
+  } catch(e) {
+    wrap.innerHTML = '<div style="color:var(--red);font-size:13px;">Could not load scripture. Check your connection and try again.</div>';
+  }
+}
+
+function saveDevAnswers() {
+  const today = todayKey();
+  if(!S.devotionals[today]) return;
+  ['a1','a2','a3'].forEach(k=>{ S.devotionals[today][k]=document.getElementById('dev-'+k).value; });
+  save();
+  const s=document.getElementById('dev-saved'); s.style.opacity='1'; setTimeout(()=>s.style.opacity='0',2000);
+}
+
+['dev-a1','dev-a2','dev-a3'].forEach(id=>{
+  setTimeout(()=>{
+    const el=document.getElementById(id);
+    if(el) el.oninput=saveDevAnswers;
+  },500);
+});
+
+async function submitDevotional() {
+  const today = todayKey();
+  const d = S.devotionals[today];
+  if(!d||!d.scripture) { alert('Load a scripture passage first.'); return; }
+  const a1=document.getElementById('dev-a1').value.trim();
+  const a2=document.getElementById('dev-a2').value.trim();
+  const a3=document.getElementById('dev-a3').value.trim();
+  if(!a1&&!a2&&!a3){ alert('Write at least one reflection response first.'); return; }
+  saveDevAnswers();
+
+  const feedbackWrap = document.getElementById('dev-feedback-wrap');
+  const feedbackEl   = document.getElementById('dev-feedback-text');
+  feedbackWrap.style.display='block';
+  feedbackEl.className='ai-text loading';
+  feedbackEl.textContent='Reflecting on your responses...';
+
+  const prompt = `You are a thoughtful Christian devotional guide responding to Parker Nelson — a man of sincere faith, enterprise AE in Frisco TX, father, in a season of intentional growth.
+
+Today's scripture (NLT): ${d.reference}
+"${d.scripture}"
+
+Reflection questions and Parker's responses:
+
+Q1: ${d.q1}
+A1: ${a1||'(not answered)'}
+
+Q2: ${d.q2}
+A2: ${a2||'(not answered)'}
+
+Q3: ${d.q3}
+A3: ${a3||'(not answered)'}
+
+Write a warm, pastoral 3–4 paragraph devotional response. Affirm what rings true in his reflections. Offer spiritual insight or a gentle challenge where there is room to grow. Close with a prayer prompt or one-sentence blessing. Tone: like a trusted pastor who knows him well — encouraging, grounded in scripture, never preachy.`;
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST', headers:{'Content-Type':'application/json','x-api-key':'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','anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+      body: JSON.stringify({model:'claude-sonnet-4-5',max_tokens:1000,messages:[{role:'user',content:prompt}]})
+    });
+    const data = await res.json();
+    const text = data.content?.find(b=>b.type==='text')?.text||'Unable to generate response.';
+    feedbackEl.className='ai-text'; feedbackEl.textContent=text;
+    S.devotionals[today].feedback=text; save();
+    renderDevHistory();
+  } catch(e) {
+    feedbackEl.className='ai-text'; feedbackEl.textContent='Could not reach Claude. Check your connection.';
+  }
+}
+
+function renderDevHistory() {
+  const wrap = document.getElementById('dev-history-list');
+  if(!wrap) return;
+  const entries = Object.entries(S.devotionals||{}).sort((a,b)=>b[0].localeCompare(a[0])).slice(1,8);
+  if(!entries.length){ wrap.innerHTML='<div style="color:var(--ink4);font-size:13px;">Past devotionals will appear here.</div>'; return; }
+  wrap.innerHTML = entries.map(([date,d])=>`
+    <div class="dev-history-item" onclick="viewPastDevotional('${date}')">
+      <div class="dev-history-date">${date}</div>
+      <div class="dev-history-ref">${d.reference||'—'}</div>
+      ${d.feedback?'<div style="font-size:11px;color:var(--green);margin-top:3px;">✓ Feedback received</div>':''}
+    </div>
+  `).join('');
+}
+
+function viewPastDevotional(date) {
+  const d = S.devotionals[date];
+  if(!d) return;
+  const parts = [
+    "Scripture: " + (d.reference||date) + " (NLT)",
+    d.scripture||"",
+    d.q1 ? ("Q1: " + d.q1 + "\nA: " + (d.a1||"(not answered)")) : "",
+    d.q2 ? ("Q2: " + d.q2 + "\nA: " + (d.a2||"(not answered)")) : "",
+    d.q3 ? ("Q3: " + d.q3 + "\nA: " + (d.a3||"(not answered)")) : "",
+    d.feedback ? ("Feedback:\n" + d.feedback) : ""
+  ];
+  alert(parts.filter(Boolean).join("\n\n"));
+}
+
+
+// ══ EXPORT / IMPORT ══
+function exportData() {
+  const blob = new Blob([JSON.stringify(S, null, 2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const d = new Date();
+  a.href = url;
+  a.download = `life-os-backup-${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function importData(e) {
+  const file = e.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = function(ev) {
+    try {
+      const parsed = JSON.parse(ev.target.result);
+      if(!parsed.habits && !parsed.goals && !parsed.workouts) {
+        alert('This doesn\'t look like a valid Life OS backup file.');
+        return;
+      }
+      if(!confirm('This will replace all your current data with the backup. Continue?')) return;
+      S = parsed;
+      save();
+      location.reload();
+    } catch(err) {
+      alert('Could not read the file. Make sure it\'s a valid Life OS JSON backup.');
+    }
+  };
+  reader.readAsText(file);
+  e.target.value = '';
+}
+
+// ══ DAY PLANNER ══
+function saveDayPlan() {
+  const today = todayKey();
+  if(!S.dayPlan) S.dayPlan = {};
+  if(!S.dayPlan[today]) S.dayPlan[today] = {events:[], priorities:''};
+  S.dayPlan[today].priorities = document.getElementById('day-priorities').value;
+  save();
+}
+
+function addCalEvent() {
+  const timeEl = document.getElementById('new-event-time');
+  const titleEl = document.getElementById('new-event-title');
+  const title = titleEl.value.trim();
+  if(!title) return;
+  const today = todayKey();
+  if(!S.dayPlan) S.dayPlan = {};
+  if(!S.dayPlan[today]) S.dayPlan[today] = {events:[], priorities:''};
+  const time = timeEl.value;
+  const displayTime = time ? formatTime12h(time) : '';
+  S.dayPlan[today].events.push({time, displayTime, title});
+  S.dayPlan[today].events.sort((a,b)=>a.time.localeCompare(b.time));
+  titleEl.value = ''; timeEl.value = '';
+  save(); renderDayCalEvents();
+}
+
+function formatTime12h(t) {
+  if(!t) return '';
+  const [h,m] = t.split(':').map(Number);
+  const ampm = h >= 12 ? 'pm' : 'am';
+  const h12 = h % 12 || 12;
+  return `${h12}:${String(m).padStart(2,'0')}${ampm}`;
+}
+
+function deleteCalEvent(idx) {
+  const today = todayKey();
+  S.dayPlan[today].events.splice(idx, 1);
+  save(); renderDayCalEvents();
+}
+
+function renderDayCalEvents() {
+  const today = todayKey();
+  const events = S.dayPlan?.[today]?.events || [];
+  const wrap = document.getElementById('day-cal-events');
+  if(!wrap) return;
+  if(!events.length) {
+    wrap.innerHTML = '<div style="font-size:13px;color:var(--ink4);padding:6px 0 4px;">No events added yet.</div>';
+    return;
+  }
+  wrap.innerHTML = events.map((e,i) => `
+    <div class="cal-event-row">
+      <div class="cal-event-time">${e.displayTime||'—'}</div>
+      <div class="cal-event-title">${e.title}</div>
+      <button class="cal-event-del" onclick="deleteCalEvent(${i})">×</button>
+    </div>
+  `).join('');
+}
+
+async function optimizeDayAI() {
+  const today = todayKey();
+  const plan = S.dayPlan?.[today] || {events:[], priorities:''};
+  const b3 = S.dailyBig3[today].map((x,i)=>`${i+1}. ${x.t||'(blank)'} [${x.done?'done':'not done'}]`).join('\n');
+  const events = plan.events.length
+    ? plan.events.map(e=>`  ${e.displayTime||'no time'} — ${e.title}`).join('\n')
+    : '  (no events entered)';
+  const priorities = plan.priorities || '(none listed)';
+  const goals = S.goals.filter(g=>g.progress<100).slice(0,6).map(g=>`  • ${g.title} (${DOMAINS.find(d=>d.id===g.domain)?.name||g.domain}, ${g.progress||0}% done)`).join('\n') || '  (no active goals)';
+  const hDone = habitsDoneToday(), hTotal = habitsToday();
+
+  const prompt = `You are a daily planning coach for Parker Nelson — Christian, enterprise AE at Workday in Frisco TX, dad, deliberate about building a purposeful life. He uses Michael Hyatt's Full Focus framework.
+
+TODAY'S BIG 3 (most important outcomes):
+${b3}
+
+TODAY'S CALENDAR:
+${events}
+
+OTHER PRIORITIES & TASKS:
+${priorities}
+
+ACTIVE GOALS (context):
+${goals}
+
+HABITS: ${hDone}/${hTotal} done today.
+
+Your job — give Parker a sharp daily game plan:
+1. **Is today set up to win?** Do his Big 3 have protected time in his calendar, or are they getting squeezed?
+2. **Conflicts & gaps** — what's fighting for the same energy or time? What's missing?
+3. **Priority order** — given everything above, what should he tackle first, second, third?
+4. **Cut or defer** — what on this list doesn't belong today? What should move?
+5. **One key protection** — what's the single most important thing he must guard today?
+
+Be direct, warm, specific to HIS actual data. Write in short paragraphs. No generic advice. Reference his actual meetings, goals, and Big 3 by name.`;
+
+  const wrap = document.getElementById('day-optimize-ai');
+  const el = document.getElementById('day-optimize-text');
+  wrap.style.display = 'block';
+  el.className = 'ai-text loading';
+  el.textContent = 'Building your game plan...';
+  await callClaude(prompt, el);
+}
+
+// ══ INIT ══
+load();
+fitLoad();
+devLoad();
+renderToday();
+</script>
+
+<!-- ══ WORKOUT MODAL ══ -->
+<div class="overlay" id="workout-modal">
+  <div class="modal">
+    <div class="modal-title">Log FST-7 workout</div>
+    <div class="modal-sub">Quick log — muscle group, feel, and any notes.</div>
+    <div class="form-row">
+      <label class="form-label">Muscle groups trained <span style="font-weight:300;color:var(--ink3);">(select all that apply)</span></label>
+      <div style="margin-bottom:8px;">
+        <div style="font-size:10px;font-family:'DM Mono',monospace;letter-spacing:1px;color:var(--ink4);text-transform:uppercase;margin-bottom:6px;">Primary</div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;" id="wm-primary-chips">
+          <button type="button" class="muscle-sel-btn" data-muscle="Chest">Chest</button>
+          <button type="button" class="muscle-sel-btn" data-muscle="Back">Back</button>
+          <button type="button" class="muscle-sel-btn" data-muscle="Shoulders">Shoulders</button>
+          <button type="button" class="muscle-sel-btn" data-muscle="Biceps">Biceps</button>
+          <button type="button" class="muscle-sel-btn" data-muscle="Triceps">Triceps</button>
+          <button type="button" class="muscle-sel-btn" data-muscle="Legs">Legs</button>
+          <button type="button" class="muscle-sel-btn" data-muscle="Quads">Quads</button>
+          <button type="button" class="muscle-sel-btn" data-muscle="Hamstrings">Hamstrings</button>
+          <button type="button" class="muscle-sel-btn" data-muscle="Glutes">Glutes</button>
+          <button type="button" class="muscle-sel-btn" data-muscle="Full Body">Full Body</button>
+        </div>
+      </div>
+      <div>
+        <div style="font-size:10px;font-family:'DM Mono',monospace;letter-spacing:1px;color:var(--ink4);text-transform:uppercase;margin-bottom:6px;">Additional</div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;">
+          <button type="button" class="muscle-sel-btn" data-muscle="Calves">Calves</button>
+          <button type="button" class="muscle-sel-btn" data-muscle="Abs">Abs</button>
+          <button type="button" class="muscle-sel-btn" data-muscle="Cardio">Cardio</button>
+        </div>
+      </div>
+      <div id="wm-muscle-error" style="font-size:11px;color:var(--red);margin-top:6px;display:none;">Select at least one muscle group.</div>
+    </div>
+    <div class="form-row">
+      <label class="form-label">How did it feel?</label>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;" id="wm-feel-btns">
+        <button class="feel-btn" onclick="selectFeel('Crushed it')">💪 Crushed it</button>
+        <button class="feel-btn" onclick="selectFeel('Solid')">✅ Solid</button>
+        <button class="feel-btn" onclick="selectFeel('Average')">😐 Average</button>
+        <button class="feel-btn" onclick="selectFeel('Struggled')">😓 Struggled</button>
+        <button class="feel-btn" onclick="selectFeel('Active recovery')">🧘 Active recovery</button>
+      </div>
+    </div>
+    <div class="form-row">
+      <label class="form-label">Notes <span style="font-weight:300;color:var(--ink3)">(optional)</span></label>
+      <textarea class="input" id="wm-notes" placeholder="PR, pump, energy, anything worth remembering..." style="min-height:70px;"></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal('workout-modal')">Cancel</button>
+      <button class="btn primary" onclick="saveWorkout()">Log workout</button>
+    </div>
+  </div>
+</div>
+
+<script>
+document.querySelectorAll('.muscle-sel-btn').forEach(b=>{
+  b.addEventListener('click', function(e){ e.preventDefault(); toggleMuscleBtn(this); });
+});
+</script>
+
+</body>
+</html>
