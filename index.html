@@ -265,7 +265,59 @@ select.input{cursor:pointer;}
 .cal-event-del:hover{color:var(--red);}
 .add-event-row{display:flex;gap:6px;margin-top:8px;}
 .time-input{width:80px;flex-shrink:0;}
+
+/* ── MOBILE RESPONSIVE ── */
+@media (max-width: 600px) {
+  .app{padding:16px 14px 80px;}
+  .app-header{flex-direction:column;align-items:flex-start;gap:10px;}
+  .app-header > div:last-child{align-items:flex-start;flex-direction:row;flex-wrap:wrap;gap:8px;}
+  .nav{overflow-x:auto;border-radius:8px;gap:1px;}
+  .nav-tab{font-size:10px;padding:7px 2px;min-width:44px;letter-spacing:0.2px;}
+  .stats-row{grid-template-columns:repeat(2,1fr);}
+  .display{font-size:22px;}
+  .section-title{font-size:16px;}
+  .card{padding:16px;}
+  .modal{padding:20px;}
+  .goal-smarter{grid-template-columns:1fr;}
+  .week-score-grid{grid-template-columns:repeat(7,1fr);gap:3px;}
+  .wsg-score{font-size:14px;}
+  .wsg-day{font-size:7px;}
+  .stats-row .stat{padding:10px 12px;}
+  .stat-val{font-size:20px;}
+  .big3-item{gap:8px;}
+  .habit-card{padding:14px 16px;}
+  .week-grid{gap:2px;}
+  .week-cell-box{width:24px;height:24px;}
+  .heatmap{gap:1px;}
+  .hm-cell{width:9px;height:9px;}
+  /* Fitness */
+  .macro-bar-label{font-size:11px;}
+  #macro-inputs-grid{grid-template-columns:repeat(3,1fr) !important;}
+  .fit-cal-cell{min-height:38px;padding:3px 2px;}
+  .cal-day-num{font-size:8px;}
+  /* Macro inputs on mobile - 3 col then 2 col */
+  .macro-inputs-row{grid-template-columns:repeat(3,1fr) !important;}
+  /* Feel buttons wrap nicely */
+  .feel-btn{font-size:12px;padding:6px 10px;}
+  /* Modal full width */
+  .overlay{padding:0;}
+  .modal{border-radius:0;min-height:100vh;overflow-y:auto;}
+  /* Day planner */
+  .add-event-row{flex-wrap:wrap;}
+  .time-input{width:100%;}
+  /* Nav bottom bar on mobile */
+  .nav{position:fixed;bottom:0;left:0;right:0;border-radius:0;padding:4px;z-index:100;background:var(--white);border-top:1px solid var(--border);margin:0;}
+  .app{padding-bottom:70px;}
+  .nav-tab{font-size:9px;padding:6px 2px;}
+}
+@media (max-width: 380px) {
+  .stats-row{grid-template-columns:repeat(2,1fr);}
+  .nav-tab{font-size:8px;}
+}
 </style>
+<script type="module">
+// Firebase will be initialized here
+</script>
 </head>
 <body>
 <div class="app">
@@ -736,6 +788,64 @@ const WEEKLY_Qs = [
   {q:'What is God teaching me right now, and how am I responding?', src:'Full Focus Planner — faith edition'}
 ];
 
+
+// ══ FIREBASE CONFIG ══
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyAw1Zzh5uTWvXE7QdkwcwahGTGa_wkvGKs",
+  authDomain: "life-os-d44c5.firebaseapp.com",
+  projectId: "life-os-d44c5",
+  storageBucket: "life-os-d44c5.firebasestorage.app",
+  messagingSenderId: "1067421116418",
+  appId: "1:1067421116418:web:1b7bbb46aaf5ed1be15f1b"
+};
+
+let db = null;
+let fbInitialized = false;
+const USER_PATH = 'users/parker/data/state';
+
+async function initFirebase() {
+  try {
+    const { initializeApp } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js');
+    const { getFirestore, doc, getDoc, setDoc } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
+    const app = initializeApp(FIREBASE_CONFIG);
+    db = getFirestore(app);
+    window._fbDoc = doc(db, USER_PATH);
+    window._fbSetDoc = setDoc;
+    window._fbGetDoc = getDoc;
+    fbInitialized = true;
+    console.log('Firebase ready');
+  } catch(e) {
+    console.warn('Firebase init failed, using localStorage:', e);
+  }
+}
+
+let saveTimer = null;
+async function save() {
+  // Always save to localStorage as backup
+  try { localStorage.setItem('lifeos_v3', JSON.stringify(S)); } catch(e) {}
+  // Debounced save to Firebase
+  if(saveTimer) clearTimeout(saveTimer);
+  saveTimer = setTimeout(async () => {
+    if(!fbInitialized || !window._fbDoc) return;
+    try {
+      await window._fbSetDoc(window._fbDoc, {data: JSON.stringify(S)}, {merge: true});
+    } catch(e) { console.warn('Firebase save failed:', e); }
+  }, 800);
+}
+
+async function loadFromFirebase() {
+  if(!fbInitialized || !window._fbDoc) return false;
+  try {
+    const snap = await window._fbGetDoc(window._fbDoc);
+    if(snap.exists()) {
+      const parsed = JSON.parse(snap.data().data);
+      S = parsed;
+      return true;
+    }
+  } catch(e) { console.warn('Firebase load failed:', e); }
+  return false;
+}
+
 const SK = 'lifeos_v3';
 let S = {};
 let promptIdx = 0;
@@ -769,7 +879,8 @@ function getWeekDays() {
 }
 
 // ══ STATE ══
-function load() {
+async function load() {
+  // Try localStorage first for instant load
   try { const r=localStorage.getItem(SK); if(r) S=JSON.parse(r); } catch(e) {}
   if(!S.habits) S.habits = [];
   if(!S.goals)  S.goals  = [];
@@ -791,7 +902,7 @@ function load() {
   if(!S.weeklyReview[wk]) S.weeklyReview[wk] = {};
   promptIdx = S.promptIdx[today] || 0;
 }
-function save() { try { localStorage.setItem(SK, JSON.stringify(S)); } catch(e) {} }
+// save() defined above with Firebase sync
 
 // ══ COMPUTED ══
 function habitDoneToday(hid) { return !!(S.habitLog[hid]||{})[todayKey()]; }
@@ -2101,10 +2212,30 @@ Be direct, warm, specific to HIS actual data. Write in short paragraphs. No gene
 }
 
 // ══ INIT ══
-load();
-fitLoad();
-devLoad();
-renderToday();
+(async function() {
+  // Show loading state
+  document.getElementById('today-greeting').textContent = 'Loading...';
+  
+  // Init Firebase
+  await initFirebase();
+  
+  // Load from localStorage immediately
+  load();
+  fitLoad();
+  devLoad();
+  renderToday();
+  
+  // Then try to get fresher data from Firebase
+  if(fbInitialized) {
+    const gotFirebase = await loadFromFirebase();
+    if(gotFirebase) {
+      load(); // re-init defaults on top of Firebase data
+      fitLoad();
+      devLoad();
+      renderToday();
+    }
+  }
+})();
 </script>
 
 <!-- ══ WORKOUT MODAL ══ -->
