@@ -812,7 +812,7 @@ function getAPIHeaders() {
 
 function saveAPIKey() {
   const key = document.getElementById('api-key-input').value.trim();
-  if(!key.startsWith('sk-ant-')) { alert('That doesn\'t look like a valid Anthropic API key.'); return; }
+  if(!key.startsWith('sk-ant-')) { alert('That does not look like a valid Anthropic API key.'); return; }
   S.apiKey = key;
   localStorage.setItem('lifeos_apikey', key);
   save();
@@ -2033,9 +2033,27 @@ async function loadDevotional() {
   const today = todayKey();
   const d = new Date();
   const dateStr = d.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'});
-  const prompt = `You are generating a daily Christian devotional for Parker Nelson — a man of deep faith, enterprise professional, father, living in Frisco TX. Today is ${dateStr}.
+  // Build personal context from goals and habits
+  const activeGoals = S.goals.slice(0,5).map(g=>`${g.title} (${DOMAINS.find(d=>d.id===g.domain)?.name||g.domain})`).join(', ') || 'none set yet';
+  const recentDevDates = Object.keys(S.devotionals||{}).sort().slice(-7);
+  const recentRefs = recentDevDates.map(d=>S.devotionals[d]?.reference).filter(Boolean).join(', ') || 'none yet';
+  const recentAnswers = recentDevDates.slice(-3).map(d=>{
+    const dev = S.devotionals[d];
+    return dev?.a1||dev?.a2||dev?.a3 ? `${d}: "${dev.a1||dev.a2||dev.a3}"` : null;
+  }).filter(Boolean).join(' | ') || 'none yet';
+  const b3Today = S.dailyBig3[todayKey()]?.map(x=>x.t).filter(Boolean).join(', ') || 'not set';
 
-Choose a passage from the NLT (New Living Translation) Bible that is spiritually meaningful, seasonally appropriate, and speaks into themes of faith, purpose, fatherhood, integrity, or perseverance. Choose from a wide variety of books — Old and New Testament.
+  const prompt = `You are generating a daily Christian devotional for Parker Nelson — a man of deep faith, enterprise AE at Workday in Frisco TX, husband, father, intentionally building a life of purpose. Today is ${dateStr}.
+
+Parker's context:
+- Active goals: ${activeGoals}
+- Today's Big 3: ${b3Today}
+- Recent scripture passages (avoid repeating): ${recentRefs}
+- Recent reflection themes from his answers: ${recentAnswers}
+
+Use this context to choose a passage that speaks directly into what Parker is walking through right now — his work, his faith, his family, his growth edges. Don't be generic. If he's working on a vocational goal, find scripture about integrity in work or excellence. If he's in a relational season, speak into that. Vary the books widely — Old and New Testament.
+
+Choose a passage from the NLT (New Living Translation) Bible that is spiritually meaningful and personally relevant to Parker today.
 
 Respond ONLY with valid JSON in this exact format (no markdown, no code fences, no extra text):
 {
@@ -2097,7 +2115,10 @@ async function submitDevotional() {
   feedbackEl.className='ai-text loading';
   feedbackEl.textContent='Reflecting on your responses...';
 
-  const prompt = `You are a thoughtful Christian devotional guide responding to Parker Nelson — a man of sincere faith, enterprise AE in Frisco TX, father, in a season of intentional growth.
+  const prompt = `const feedGoals = S.goals.slice(0,4).map(g=>`${g.title} (${g.progress||0}%)`).join(', ') || 'none set';
+  const feedHabits = S.habits.slice(0,5).map(h=>h.name).join(', ') || 'none set';
+  const feedPromptBase = `You are a thoughtful Christian devotional guide responding to Parker Nelson — enterprise AE at Workday in Frisco TX, husband, father, man of deep faith building intentionally. His active goals: ${feedGoals}. Daily habits he's building: ${feedHabits}.`;
+  const fPrompt = feedPromptBase + `
 
 Today's scripture (NLT): ${d.reference}
 "${d.scripture}"
