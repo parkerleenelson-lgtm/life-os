@@ -309,15 +309,54 @@ select.input{cursor:pointer;}
   /* Day planner */
   .add-event-row{flex-wrap:wrap;}
   .time-input{width:100%;}
-  /* Nav bottom bar on mobile */
-  .nav{position:fixed !important;bottom:0 !important;left:0 !important;right:0 !important;border-radius:0 !important;padding:6px 8px !important;z-index:100 !important;background:var(--white) !important;border-top:1px solid var(--border) !important;margin:0 !important;overflow-x:scroll !important;-webkit-overflow-scrolling:touch !important;display:flex !important;flex-wrap:nowrap !important;gap:4px !important;scrollbar-width:none !important;}
-  .nav::-webkit-scrollbar{display:none !important;}
-  .app{padding-bottom:72px !important;}
-  .nav-tab{font-size:11px !important;padding:8px 12px !important;white-space:nowrap !important;flex-shrink:0 !important;min-width:auto !important;flex:0 0 auto !important;}
+  /* mobile nav handled by #mobile-nav-bar */
 }
 @media (max-width: 380px) {
   .stats-row{grid-template-columns:repeat(2,1fr);}
   .nav-tab{font-size:9px !important;padding:6px 8px !important;}
+}
+
+/* ── MOBILE MENU ── */
+#mobile-nav-bar{display:none;}
+#mobile-menu{display:none;}
+#mobile-menu-overlay{display:none;}
+
+@media(max-width:600px){
+  #desktop-nav{display:none;}
+  .app{padding-top:56px;padding-bottom:20px;}
+
+  #mobile-nav-bar{
+    display:flex;justify-content:space-between;align-items:center;
+    position:fixed;top:0;left:0;right:0;z-index:150;
+    background:var(--white);border-bottom:1px solid var(--border);
+    padding:12px 18px;height:52px;
+  }
+  #mobile-nav-current{
+    font-family:'DM Sans',sans-serif;font-size:15px;font-weight:600;color:var(--ink);
+  }
+  #mobile-menu-btn{
+    background:none;border:none;font-size:22px;color:var(--ink);cursor:pointer;
+    padding:4px 8px;line-height:1;
+  }
+  #mobile-menu-overlay{
+    display:none;position:fixed;inset:0;background:rgba(24,22,15,0.4);z-index:200;
+  }
+  #mobile-menu-overlay.open{display:block;}
+  #mobile-menu{
+    display:none;position:fixed;top:0;right:0;bottom:0;width:72%;max-width:280px;
+    background:var(--white);z-index:250;padding:60px 0 30px;
+    box-shadow:-4px 0 20px rgba(0,0,0,0.12);
+    overflow-y:auto;
+  }
+  #mobile-menu.open{display:block;}
+  .mobile-menu-item{
+    padding:16px 28px;font-size:16px;font-weight:500;color:var(--ink2);
+    cursor:pointer;border-bottom:1px solid var(--border);
+    font-family:'DM Sans',sans-serif;transition:background 0.1s;
+  }
+  .mobile-menu-item:hover{background:var(--surface);}
+  .mobile-menu-item.active{color:var(--gold);font-weight:600;}
+  .mobile-menu-item:last-child{border-bottom:none;}
 }
 </style>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
@@ -340,16 +379,34 @@ select.input{cursor:pointer;}
     </div>
   </div>
 
-  <nav class="nav" style="overflow-x:auto;-webkit-overflow-scrolling:touch;flex-wrap:nowrap;">
-    <button class="nav-tab active" onclick="nav('today',this)" style="flex-shrink:0;white-space:nowrap;">Today</button>
-    <button class="nav-tab" onclick="nav('habits',this)" style="flex-shrink:0;white-space:nowrap;">Habits</button>
-    <button class="nav-tab" onclick="nav('goals',this)" style="flex-shrink:0;white-space:nowrap;">Goals</button>
-    <button class="nav-tab" onclick="nav('reflect',this)" style="flex-shrink:0;white-space:nowrap;">Reflect</button>
-    <button class="nav-tab" onclick="nav('week',this)" style="flex-shrink:0;white-space:nowrap;">Week</button>
-    <button class="nav-tab" onclick="nav('fitness',this)" style="flex-shrink:0;white-space:nowrap;">Fitness</button>
-    <button class="nav-tab" onclick="nav('devotional',this)" style="flex-shrink:0;white-space:nowrap;">Devotional</button>
-    <button class="nav-tab" onclick="nav('journal',this)" style="flex-shrink:0;white-space:nowrap;">Journal</button>
+  <!-- Desktop nav -->
+  <nav class="nav" id="desktop-nav">
+    <button class="nav-tab active" onclick="nav('today',this)">Today</button>
+    <button class="nav-tab" onclick="nav('habits',this)">Habits</button>
+    <button class="nav-tab" onclick="nav('goals',this)">Goals</button>
+    <button class="nav-tab" onclick="nav('reflect',this)">Reflect</button>
+    <button class="nav-tab" onclick="nav('week',this)">Week</button>
+    <button class="nav-tab" onclick="nav('fitness',this)">Fitness</button>
+    <button class="nav-tab" onclick="nav('devotional',this)">Devotional</button>
+    <button class="nav-tab" onclick="nav('journal',this)">Journal</button>
   </nav>
+
+  <!-- Mobile nav -->
+  <div id="mobile-nav-bar">
+    <div id="mobile-nav-current">Today</div>
+    <button id="mobile-menu-btn" onclick="toggleMobileMenu()">&#9776;</button>
+  </div>
+  <div id="mobile-menu-overlay" onclick="closeMobileMenu()"></div>
+  <div id="mobile-menu">
+    <div class="mobile-menu-item active" onclick="mobileNav('today',this)">Today</div>
+    <div class="mobile-menu-item" onclick="mobileNav('habits',this)">Habits</div>
+    <div class="mobile-menu-item" onclick="mobileNav('goals',this)">Goals</div>
+    <div class="mobile-menu-item" onclick="mobileNav('reflect',this)">Reflect</div>
+    <div class="mobile-menu-item" onclick="mobileNav('week',this)">Week</div>
+    <div class="mobile-menu-item" onclick="mobileNav('fitness',this)">Fitness</div>
+    <div class="mobile-menu-item" onclick="mobileNav('devotional',this)">Devotional</div>
+    <div class="mobile-menu-item" onclick="mobileNav('journal',this)">Journal</div>
+  </div>
 
   <!-- ══ TODAY ══ -->
   <div id="page-today" class="page active">
@@ -2404,6 +2461,33 @@ Be direct, warm, specific to HIS actual data. Write in short paragraphs. No gene
   el.className = 'ai-text loading';
   el.textContent = 'Building your game plan...';
   await callClaude(prompt, el);
+}
+
+
+// ══ MOBILE MENU ══
+function toggleMobileMenu() {
+  document.getElementById('mobile-menu').classList.toggle('open');
+  document.getElementById('mobile-menu-overlay').classList.toggle('open');
+}
+function closeMobileMenu() {
+  document.getElementById('mobile-menu').classList.remove('open');
+  document.getElementById('mobile-menu-overlay').classList.remove('open');
+}
+function mobileNav(pageId, el) {
+  // Navigate
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById('page-'+pageId).classList.add('active');
+  // Update desktop nav active state
+  document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
+  // Update mobile menu active state
+  document.querySelectorAll('.mobile-menu-item').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  // Update current label
+  document.getElementById('mobile-nav-current').textContent = el.textContent;
+  // Close menu
+  closeMobileMenu();
+  // Render
+  renders[pageId]();
 }
 
 // ══ INIT ══
