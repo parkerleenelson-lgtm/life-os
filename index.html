@@ -1522,7 +1522,7 @@ async function coachAI(type) {
 async function callClaude(prompt, el) {
   try {
     const res=await fetch('https://api.anthropic.com/v1/messages',{
-      method:'POST',headers:{'Content-Type':'application/json','x-api-key':'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','anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+      method:'POST',headers:{'Content-Type':'application/json','x-api-key':'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','anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
       body:JSON.stringify({model:'claude-sonnet-4-5',max_tokens:1000,messages:[{role:'user',content:prompt}]})
     });
     const data=await res.json();
@@ -2017,7 +2017,7 @@ Respond ONLY with valid JSON in this exact format (no markdown, no code fences, 
 
   try {
     const res = await fetch('https://api.anthropic.com/v1/messages',{
-      method:'POST', headers:{'Content-Type':'application/json','x-api-key':'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','anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+      method:'POST', headers:{'Content-Type':'application/json','x-api-key':'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','anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
       body: JSON.stringify({model:'claude-sonnet-4-5',max_tokens:1000,messages:[{role:'user',content:prompt}]})
     });
     const data = await res.json();
@@ -2085,7 +2085,7 @@ Write a warm, pastoral 3–4 paragraph devotional response. Affirm what rings tr
 
   try {
     const res = await fetch('https://api.anthropic.com/v1/messages',{
-      method:'POST', headers:{'Content-Type':'application/json','x-api-key':'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','anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+      method:'POST', headers:{'Content-Type':'application/json','x-api-key':'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','anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
       body: JSON.stringify({model:'claude-sonnet-4-5',max_tokens:1000,messages:[{role:'user',content:prompt}]})
     });
     const data = await res.json();
