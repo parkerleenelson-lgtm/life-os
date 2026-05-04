@@ -326,6 +326,7 @@ select.input{cursor:pointer;}
     <div class="app-title">Life <em>OS</em></div>
     <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;">
       <div style="display:flex;gap:6px;">
+        <button class="btn sm" onclick="document.getElementById('api-key-modal').classList.add('open')" title="Set your Anthropic API key">API key</button>
         <button class="btn sm" onclick="exportData()" title="Download your data as a backup file">Export data</button>
         <button class="btn sm" onclick="document.getElementById('import-input').click()" title="Restore from a backup file">Import</button>
         <input type="file" id="import-input" accept=".json" style="display:none;" onchange="importData(event)"/>
@@ -793,6 +794,37 @@ const WEEKLY_Qs = [
   {q:'What is God teaching me right now, and how am I responding?', src:'Full Focus Planner — faith edition'}
 ];
 
+
+
+// ══ API KEY MANAGEMENT ══
+function getAPIKey() {
+  return S.apiKey || localStorage.getItem('lifeos_apikey') || '';
+}
+
+function getAPIHeaders() {
+  return {
+    'Content-Type': 'application/json',
+    'x-api-key': getAPIKey(),
+    'anthropic-version': '2023-06-01',
+    'anthropic-dangerous-direct-browser-access': 'true'
+  };
+}
+
+function saveAPIKey() {
+  const key = document.getElementById('api-key-input').value.trim();
+  if(!key.startsWith('sk-ant-')) { alert('That doesn\'t look like a valid Anthropic API key.'); return; }
+  S.apiKey = key;
+  localStorage.setItem('lifeos_apikey', key);
+  save();
+  document.getElementById('api-key-modal').classList.remove('open');
+  alert('API key saved! All AI features are now active.');
+}
+
+function checkAPIKey() {
+  if(!getAPIKey()) {
+    document.getElementById('api-key-modal').classList.add('open');
+  }
+}
 
 // ══ FIREBASE CONFIG ══
 const FIREBASE_CONFIG = {
@@ -1522,7 +1554,7 @@ async function coachAI(type) {
 async function callClaude(prompt, el) {
   try {
     const res=await fetch('https://api.anthropic.com/v1/messages',{
-      method:'POST',headers:{'Content-Type':'application/json','x-api-key':'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','anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+      method:'POST',headers:getAPIHeaders(),
       body:JSON.stringify({model:'claude-sonnet-4-5',max_tokens:1000,messages:[{role:'user',content:prompt}]})
     });
     const data=await res.json();
@@ -2017,7 +2049,7 @@ Respond ONLY with valid JSON in this exact format (no markdown, no code fences, 
 
   try {
     const res = await fetch('https://api.anthropic.com/v1/messages',{
-      method:'POST', headers:{'Content-Type':'application/json','x-api-key':'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','anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+      method:'POST', headers:getAPIHeaders(),
       body: JSON.stringify({model:'claude-sonnet-4-5',max_tokens:1000,messages:[{role:'user',content:prompt}]})
     });
     const data = await res.json();
@@ -2085,7 +2117,7 @@ Write a warm, pastoral 3–4 paragraph devotional response. Affirm what rings tr
 
   try {
     const res = await fetch('https://api.anthropic.com/v1/messages',{
-      method:'POST', headers:{'Content-Type':'application/json','x-api-key':'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','anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+      method:'POST', headers:getAPIHeaders(),
       body: JSON.stringify({model:'claude-sonnet-4-5',max_tokens:1000,messages:[{role:'user',content:prompt}]})
     });
     const data = await res.json();
@@ -2268,6 +2300,9 @@ Be direct, warm, specific to HIS actual data. Write in short paragraphs. No gene
   // Show loading state
   document.getElementById('today-greeting').textContent = 'Loading...';
   
+  // Check API key
+  checkAPIKey();
+  
   // Init Firebase
   await initFirebase();
   
@@ -2348,6 +2383,24 @@ document.querySelectorAll('.muscle-sel-btn').forEach(b=>{
   b.addEventListener('click', function(e){ e.preventDefault(); toggleMuscleBtn(this); });
 });
 </script>
+
+
+<!-- ══ API KEY MODAL ══ -->
+<div class="overlay" id="api-key-modal">
+  <div class="modal" style="max-width:480px;">
+    <div class="modal-title">Enter your API key</div>
+    <div class="modal-sub">Your Anthropic API key is stored privately in your browser and Firebase — never in the code. Get one at console.anthropic.com → API Keys.</div>
+    <div class="form-row">
+      <label class="form-label">Anthropic API key</label>
+      <input class="input" id="api-key-input" type="password" placeholder="sk-ant-api03-..." />
+      <div class="form-hint">Starts with sk-ant-api03-</div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal('api-key-modal')">Skip for now</button>
+      <button class="btn primary" onclick="saveAPIKey()">Save key</button>
+    </div>
+  </div>
+</div>
 
 </body>
 </html>
