@@ -1412,7 +1412,25 @@ const WEEKLY_Qs = [
 
 // ══ API KEY MANAGEMENT ══
 function getAPIKey() {
-  return S.apiKey || localStorage.getItem('lifeos_apikey') || '';
+  return localStorage.getItem('lifeos_apikey') || '';
+}
+
+async function loadAPIKeyFromFirebase() {
+  if(!fbInitialized || !window._fbDb) return;
+  try {
+    const snap = await window._fbDb.doc('users/parker/config/apikey').get();
+    if(snap.exists) {
+      const key = snap.data().key;
+      if(key) localStorage.setItem('lifeos_apikey', key);
+    }
+  } catch(e) { console.warn('Could not load API key from Firebase:', e); }
+}
+
+async function saveAPIKeyToFirebase(key) {
+  if(!fbInitialized || !window._fbDb) return;
+  try {
+    await window._fbDb.doc('users/parker/config/apikey').set({key});
+  } catch(e) { console.warn('Could not save API key to Firebase:', e); }
 }
 
 function getAPIHeaders() {
@@ -1427,15 +1445,17 @@ function getAPIHeaders() {
 function saveAPIKey() {
   const key = document.getElementById('api-key-input').value.trim();
   if(!key.startsWith('sk-ant-')) { alert('That does not look like a valid Anthropic API key.'); return; }
-  S.apiKey = key;
+  // Store in localStorage for instant access
   localStorage.setItem('lifeos_apikey', key);
-  save();
+  // Also save to separate Firebase path so it survives cache clears
+  saveAPIKeyToFirebase(key);
   document.getElementById('api-key-modal').classList.remove('open');
   alert('API key saved! All AI features are now active.');
 }
 
 function checkAPIKey() {
-  if(!getAPIKey()) {
+  const key = localStorage.getItem('lifeos_apikey');
+  if(!key) {
     document.getElementById('api-key-modal').classList.add('open');
   }
 }
@@ -1475,7 +1495,8 @@ async function save() {
   saveTimer = setTimeout(async () => {
     if(!fbInitialized || !window._fbDb) return;
     try {
-      await window._fbDb.doc(USER_PATH).set({data: JSON.stringify(S)}, {merge: true});
+      const saveData = {...S}; delete saveData.apiKey;
+      await window._fbDb.doc(USER_PATH).set({data: JSON.stringify(saveData)}, {merge: true});
     } catch(e) { console.warn('Firebase save failed:', e); }
   }, 800);
 }
@@ -1486,6 +1507,8 @@ async function loadFromFirebase() {
     const snap = await window._fbDb.doc(USER_PATH).get();
     if(snap.exists) {
       const parsed = JSON.parse(snap.data().data);
+      // Preserve the local API key - never let Firebase overwrite it
+      delete parsed.apiKey;
       S = parsed;
       return true;
     }
@@ -1812,18 +1835,19 @@ function submitBig3(type) {
   const timeField = type === 'daily' ? 'submittedDayAt' : 'submittedWeekAt';
   const timestamp = new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
   
+  if(!S.big3Meta) S.big3Meta = {};
   if(type==='daily') {
-    S.dailyBig3[key][field] = true;
-    S.dailyBig3[key][timeField] = timestamp;
-    // Prep tomorrow's slots so user can plan ahead
+    if(!S.big3Meta[key]) S.big3Meta[key] = {};
+    S.big3Meta[key].submittedDay = true;
+    S.big3Meta[key].submittedDayAt = timestamp;
     const tomorrow = getTomorrowKey();
     if(!S.dailyBig3[tomorrow]) {
       S.dailyBig3[tomorrow] = [{t:'',done:false},{t:'',done:false},{t:'',done:false}];
     }
   } else {
-    S.weeklyBig3[key][field] = true;
-    S.weeklyBig3[key][timeField] = new Date().toLocaleDateString('en-US',{month:'short',day:'numeric'});
-    // Prep next week
+    if(!S.big3Meta[key]) S.big3Meta[key] = {};
+    S.big3Meta[key].submittedWeek = true;
+    S.big3Meta[key].submittedWeekAt = new Date().toLocaleDateString('en-US',{month:'short',day:'numeric'});
     const nextWk = getNextWeekKey();
     if(!S.weeklyBig3[nextWk]) {
       S.weeklyBig3[nextWk] = [{t:'',done:false},{t:'',done:false},{t:'',done:false}];
@@ -1851,10 +1875,12 @@ function unsubmitBig3(type) {
   const today = todayKey(), wk = weekKey();
   const key = type === 'daily' ? today : wk;
   const field = type === 'daily' ? 'submittedDay' : 'submittedWeek';
-  if(type==='daily') S.dailyBig3[key][field] = false;
-  else S.weeklyBig3[key][field] = false;
+  if(!S.big3Meta) S.big3Meta = {};
+  if(!S.big3Meta[key]) S.big3Meta[key] = {};
+  S.big3Meta[key][field] = false;
   save();
   renderBig3Status(type);
+  renderToday();
 }
 
 function renderBig3Status(type) {
@@ -1866,17 +1892,19 @@ function renderBig3Status(type) {
   const completedEl = document.getElementById((type==='daily'?'daily':'weekly')+'-big3-completed');
   if(!statusEl||!btnEl||!arr) return;
   renderHeader();
+  if(!S.big3Meta) S.big3Meta = {};
+  const meta = S.big3Meta[key] || {};
   const field = type === 'daily' ? 'submittedDay' : 'submittedWeek';
   const timeField = type === 'daily' ? 'submittedDayAt' : 'submittedWeekAt';
   const done = arr.filter(x=>x.done&&x.t&&x.t.trim()).length;
   const total = arr.filter(x=>x.t&&x.t.trim()).length;
 
-  if(arr[field]) {
+  if(meta[field]) {
     // Show green completed summary
     if(completedEl) {
       const items = arr.filter(x=>x.t&&x.t.trim());
       completedEl.style.display = 'block';
-      completedEl.innerHTML = '<div style="font-size:11px;font-weight:600;color:var(--green);margin-bottom:8px;">✓ SUBMITTED AT '+arr[timeField]+' — '+done+'/'+total+' COMPLETE</div>'
+      completedEl.innerHTML = '<div style="font-size:11px;font-weight:600;color:var(--green);margin-bottom:8px;">✓ SUBMITTED AT '+meta[timeField]+' — '+done+'/'+total+' COMPLETE</div>'
         + items.map((x,i)=>'<div style="display:flex;align-items:center;gap:8px;padding:3px 0;font-size:13px;color:var(--ink2);">'
           +'<span style="color:'+(x.done?'var(--green)':'var(--ink4)')+';">'+(x.done?'✓':'○')+'</span>'
           +'<span style="'+(x.done?'text-decoration:line-through;color:var(--ink3);':'')+'">'+(i+1)+'. '+x.t+'</span>'
@@ -2633,6 +2661,7 @@ function renderWeeklyPreview() {
   const nextWk = getNextWeekKey();
   if(!S.weeklyBig3[nextWk]) S.weeklyBig3[nextWk]=[{t:'',done:false},{t:'',done:false},{t:'',done:false}];
   if(!S.weeklyPreview) S.weeklyPreview={};
+  if(!S.big3Meta) S.big3Meta={};
   if(!S.weeklyPreview[nextWk]) S.weeklyPreview[nextWk]={};
   
   renderBig3('weekly-preview-big3', S.weeklyBig3[nextWk], 'weekly');
@@ -3854,6 +3883,45 @@ function formatTime12h(t) {
   return `${h12}:${String(m).padStart(2,'0')}${ampm}`;
 }
 
+
+function toggleEditEvent(idx) {
+  const form = document.getElementById('edit-event-'+idx);
+  if(!form) return;
+  const isOpen = form.style.display !== 'none';
+  // Close all other edit forms first
+  document.querySelectorAll('[id^="edit-event-"]').forEach(f => f.style.display='none');
+  if(!isOpen) {
+    form.style.display = 'block';
+    const titleInput = document.getElementById('edit-title-'+idx);
+    if(titleInput) titleInput.focus();
+  }
+}
+
+function cancelEditEvent(idx) {
+  const form = document.getElementById('edit-event-'+idx);
+  if(form) form.style.display = 'none';
+}
+
+function saveEditEvent(idx) {
+  const today = todayKey();
+  const events = S.dayPlan?.[today]?.events;
+  if(!events || !events[idx]) return;
+  const timeEl = document.getElementById('edit-time-'+idx);
+  const titleEl = document.getElementById('edit-title-'+idx);
+  const notesEl = document.getElementById('edit-notes-'+idx);
+  const title = titleEl ? titleEl.value.trim() : '';
+  if(!title) { alert('Event title required.'); return; }
+  const time = timeEl ? timeEl.value : '';
+  events[idx].time = time;
+  events[idx].displayTime = time ? formatTime12h(time) : '';
+  events[idx].title = title;
+  events[idx].notes = notesEl ? notesEl.value.trim() : '';
+  // Re-sort by time
+  S.dayPlan[today].events.sort((a,b)=>a.time.localeCompare(b.time));
+  save();
+  renderDayCalEvents();
+}
+
 function deleteCalEvent(idx) {
   const today = todayKey();
   S.dayPlan[today].events.splice(idx, 1);
@@ -3870,16 +3938,36 @@ function renderDayCalEvents() {
     return;
   }
   wrap.innerHTML = events.map((e,i) => {
-    const notesHtml = e.notes ? '<div style="font-size:11px;color:var(--ink3);font-style:italic;padding:2px 0 6px 52px;">'+e.notes+'</div>' : '';
+    const notesHtml = e.notes ? '<div style="font-size:11px;color:var(--ink3);font-style:italic;padding:2px 0 4px 52px;">'+e.notes+'</div>' : '';
+    const editForm = '<div id="edit-event-'+i+'" style="display:none;padding:10px 12px;background:var(--surface);border-radius:8px;margin:4px 0 6px 0;">'
+      +'<div style="display:flex;gap:6px;margin-bottom:6px;">'
+      +'<input type="time" class="input time-input" id="edit-time-'+i+'" value="'+(e.time||'')+'"/>'
+      +'<input class="input" id="edit-title-'+i+'" value="'+e.title+'" placeholder="Event title" style="flex:1;"/>'
+      +'</div>'
+      +'<input class="input" id="edit-notes-'+i+'" value="'+(e.notes||'')+'"/>'
+      +'<div style="display:flex;gap:6px;justify-content:flex-end;margin-top:8px;">'
+      +'<button class="btn sm" onclick="cancelEditEvent('+i+')">Cancel</button>'
+      +'<button class="btn sm primary" onclick="saveEditEvent('+i+')">Save</button>'
+      +'</div>'
+      +'</div>';
     return '<div>'
       +'<div class="cal-event-row">'
       +'<div class="cal-event-time">'+(e.displayTime||'—')+'</div>'
       +'<div class="cal-event-title">'+e.title+'</div>'
+      +'<div class="cal-event-actions" style="display:flex;gap:4px;opacity:0;transition:opacity 0.12s;">'
+      +'<button class="btn sm" data-idx="'+i+'" onclick="toggleEditEvent(parseInt(this.dataset.idx))">Edit</button>'
       +'<button class="cal-event-del" data-idx="'+i+'" onclick="deleteCalEvent(parseInt(this.dataset.idx))">×</button>'
       +'</div>'
+      +'</div>'
       +notesHtml
+      +editForm
       +'</div>';
   }).join('');
+  // Show action buttons on hover
+  wrap.querySelectorAll('.cal-event-row').forEach(row => {
+    row.addEventListener('mouseenter', () => { const a=row.querySelector('.cal-event-actions'); if(a) a.style.opacity='1'; });
+    row.addEventListener('mouseleave', () => { const a=row.querySelector('.cal-event-actions'); if(a) a.style.opacity='0'; });
+  });
 }
 
 async function optimizeDayAI() {
@@ -3996,6 +4084,8 @@ function mobileNav(pageId, el) {
   
   // Try Firebase first - it has the most complete data
   if(fbInitialized) {
+    // Load API key from its own Firebase path first
+    await loadAPIKeyFromFirebase();
     setFirebaseStatus('syncing');
     const gotFirebase = await loadFromFirebase();
     if(gotFirebase) {
@@ -4028,7 +4118,8 @@ async function syncNow() {
   if(!fbInitialized) await initFirebase();
   if(fbInitialized) {
     try {
-      await window._fbDb.doc(USER_PATH).set({data: JSON.stringify(S)}, {merge: true});
+      const saveData = {...S}; delete saveData.apiKey;
+      await window._fbDb.doc(USER_PATH).set({data: JSON.stringify(saveData)}, {merge: true});
       setFirebaseStatus('synced');
       if(btn) btn.textContent = 'Sync';
     } catch(e) {
@@ -4069,6 +4160,7 @@ function initDefaults() {
   if(!S.dailyReview) S.dailyReview={};
   if(!S.weeklyReview) S.weeklyReview={};
   if(!S.weeklyPreview) S.weeklyPreview={};
+  if(!S.big3Meta) S.big3Meta={};
   if(!S.promptIdx) S.promptIdx={};
   if(!S.milestones) S.milestones={};
   if(!S.dayPlan) S.dayPlan={};
