@@ -580,6 +580,25 @@ select.input{cursor:pointer;}
       </div>
     </div>
 
+    <!-- DEAL STRESS CAPTURE -->
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px;">
+        <div>
+          <div class="section-title">Deal stress capture</div>
+          <div style="font-size:12px;color:var(--ink3);margin-top:2px;">Dump what's stressing you about a deal or work situation — Claude will cut through the noise</div>
+        </div>
+        <button class="btn sm gold" onclick="dealStressAI()">Analyze ↗</button>
+      </div>
+      <textarea class="input" id="deal-stress-input" placeholder="What's going on with the deal or situation? Who's involved, what happened, what are you worried about..." style="margin-top:12px;min-height:110px;"></textarea>
+      <div style="display:flex;justify-content:flex-end;margin-top:6px;">
+        <button class="btn sm danger" onclick="clearDealStress()">Clear</button>
+      </div>
+      <div id="deal-stress-ai" style="display:none;margin-top:12px;" class="ai-panel">
+        <div class="ai-header"><div class="ai-dot"></div><div class="ai-label">Claude — deal clarity</div></div>
+        <div class="ai-text" id="deal-stress-text"></div>
+      </div>
+    </div>
+
     <!-- TODAY'S HABITS -->
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
       <div class="section-title">Today's habits</div>
@@ -3311,6 +3330,41 @@ async function runNoteAI(prompt) {
   await callClaude(prompt, el);
 }
 
+
+
+// ══ DEAL STRESS CAPTURE ══
+async function dealStressAI() {
+  const input = document.getElementById('deal-stress-input').value.trim();
+  if(!input) { alert('Describe the deal situation first.'); return; }
+  const panel = document.getElementById('deal-stress-ai');
+  const el = document.getElementById('deal-stress-text');
+  panel.style.display = 'block';
+  el.className = 'ai-text loading';
+  el.textContent = 'Cutting through the noise...';
+
+  const goals = S.goals.filter(g=>g.progress<100).slice(0,4).map(g=>g.title).join(', ') || 'none set';
+  const prompt = [
+    'You are a sharp, direct sales and business coach for Parker Nelson — enterprise AE at Workday in Frisco TX, Christian, deliberate professional.',
+    'Context: Active goals: '+goals+'.',
+    'Situation: '+input,
+    'Return exactly this structure — direct and concise:',
+    '1. WHAT IS ACTUALLY HAPPENING — just the facts, stripped of emotion.',
+    '2. REAL VS ASSUMED — separate confirmed facts from assumptions or fears.',
+    '3. CORE ISSUE OR RISK — one clear sentence on what actually matters.',
+    '4. NEXT 1-3 ACTIONS — specific, tangible things in the next 24-48 hours. Name names, make calls, send emails.',
+    '5. WHAT NOT TO DO — the reactive trap to avoid.',
+    '6. CLOSING SENTENCE — calm, grounded, faith-anchored. Something to steady him.'
+  ].join('\n\n');
+
+  await callClaude(prompt, el);
+}
+
+function clearDealStress() {
+  const inp = document.getElementById('deal-stress-input');
+  if(inp) inp.value = '';
+  const ai = document.getElementById('deal-stress-ai');
+  if(ai) ai.style.display = 'none';
+}
 
 // ══ ASHLEY ══
 const ASHLEY_CATEGORIES = [
