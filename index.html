@@ -13,23 +13,23 @@
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
 :root{
-  --page:#f7f5f0;
+  --page:#f4f6f9;
   --white:#ffffff;
-  --ink:#18160f;
-  --ink2:#3d3a30;
-  --ink3:#7a7568;
-  --ink4:#b8b3a8;
-  --ink5:#dedad4;
-  --border:#e6e1d8;
-  --border2:#cec9bf;
-  --gold:#9a7b2e;
-  --gold-lt:#f9f3e3;
-  --gold-md:#e8d5a0;
-  --green:#2a6644;
-  --green-lt:#eaf3ed;
-  --red:#8b2020;
-  --red-lt:#faeaea;
-  --surface:#f0ece4;
+  --ink:#0f1117;
+  --ink2:#2d3142;
+  --ink3:#6b7280;
+  --ink4:#9ca3af;
+  --ink5:#d1d5db;
+  --border:#e5e7eb;
+  --border2:#d1d5db;
+  --gold:#4f6ef7;
+  --gold-lt:#eef0fe;
+  --gold-md:#c7d0fc;
+  --green:#059669;
+  --green-lt:#ecfdf5;
+  --red:#dc2626;
+  --red-lt:#fef2f2;
+  --surface:#f9fafb;
   --radius:10px;
   --radius-lg:14px;
 }
@@ -421,6 +421,15 @@ select.input{cursor:pointer;}
 .notes-main{flex:1;min-width:0;}
 .notes-layout{display:flex;gap:24px;}
 @media(max-width:700px){.notes-layout{flex-direction:column;} .notes-sidebar{width:100%;border-right:none;border-bottom:1px solid var(--border);padding-right:0;padding-bottom:16px;}}
+.note-editor h1{font-size:24px;font-weight:700;margin:16px 0 8px;color:var(--ink);}
+.note-editor h2{font-size:20px;font-weight:600;margin:14px 0 6px;color:var(--ink);}
+.note-editor h3{font-size:16px;font-weight:600;margin:12px 0 4px;color:var(--ink);}
+.note-editor p{margin:4px 0;line-height:1.8;}
+.note-editor ul,.note-editor ol{padding-left:24px;margin:6px 0;}
+.note-editor li{margin:3px 0;line-height:1.7;}
+.note-editor ul ul,.note-editor ol ul,.note-editor ul ol,.note-editor ol ol{margin:2px 0;}
+.note-editor blockquote{border-left:3px solid var(--gold);padding-left:14px;color:var(--ink3);font-style:italic;margin:8px 0;}
+.note-editor:focus{outline:none;}
 </style>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
@@ -920,14 +929,22 @@ select.input{cursor:pointer;}
             <button class="note-tool-btn" onclick="noteFormat('bold')" title="Bold"><b>B</b></button>
             <button class="note-tool-btn" onclick="noteFormat('italic')" title="Italic"><i>I</i></button>
             <button class="note-tool-btn" onclick="noteFormat('underline')" title="Underline"><u>U</u></button>
+            <div style="width:1px;background:var(--border);margin:0 4px;"></div>
+            <button class="note-tool-btn" onclick="noteFormat('formatBlock','h1')" title="Heading 1">H1</button>
+            <button class="note-tool-btn" onclick="noteFormat('formatBlock','h2')" title="Heading 2">H2</button>
+            <button class="note-tool-btn" onclick="noteFormat('formatBlock','h3')" title="Heading 3">H3</button>
+            <button class="note-tool-btn" onclick="noteFormat('formatBlock','p')" title="Normal text">¶</button>
+            <div style="width:1px;background:var(--border);margin:0 4px;"></div>
             <button class="note-tool-btn" onclick="noteFormat('insertUnorderedList')" title="Bullet list">• List</button>
             <button class="note-tool-btn" onclick="noteFormat('insertOrderedList')" title="Numbered list">1. List</button>
-            <button class="note-tool-btn" onclick="noteFormat('formatBlock','h3')" title="Heading">H</button>
+            <button class="note-tool-btn" onclick="noteFormat('indent')" title="Indent (Tab)">→</button>
+            <button class="note-tool-btn" onclick="noteFormat('outdent')" title="Outdent (Shift+Tab)">←</button>
+            <div style="width:1px;background:var(--border);margin:0 4px;"></div>
             <button class="note-tool-btn" onclick="noteFormat('formatBlock','blockquote')" title="Quote">" Quote</button>
             <div style="flex:1;"></div>
             <button class="note-tool-btn" style="color:var(--red);border-color:#e0b0b0;" onclick="deleteCurrentNote()">Delete</button>
           </div>
-          <div id="note-body" class="note-editor" contenteditable="true" oninput="saveCurrentNote()" style="min-height:300px;padding:4px 0;outline:none;"></div>
+          <div id="note-body" class="note-editor" contenteditable="true" oninput="saveCurrentNote()" onkeydown="handleNoteKeydown(event)" style="min-height:300px;padding:4px 0;outline:none;"></div>
           
           <!-- AI PANEL -->
           <div style="border-top:1px solid var(--border);margin-top:16px;padding-top:14px;">
@@ -1293,7 +1310,7 @@ function renderToday() {
   const activeGoals = S.goals.filter(g=>g.progress<100).length;
   const tsEl = document.getElementById('today-stats'); if(tsEl) tsEl.innerHTML = `
     <div class="stat"><span class="label">Habits</span><div class="stat-val">${hDone}<span style="font-size:15px;color:var(--ink3)">/${hTotal}</span></div><div class="stat-sub">${hTotal-hDone} remaining</div></div>
-    <div class="stat"><span class="label">Big 3</span><div class="stat-val">${big3Done(b3)}<span style="font-size:15px;color:var(--ink3)">/3</span></div><div class="stat-sub">tasks complete</div></div>
+    <div class="stat"><span class="label">Big 3</span><div class="stat-val">${big3Done(S.dailyBig3[today]||[])}<span style="font-size:15px;color:var(--ink3)">/3</span></div><div class="stat-sub">tasks complete</div></div>
     <div class="stat"><span class="label">Active goals</span><div class="stat-val">${activeGoals}</div><div class="stat-sub">in progress</div></div>
     <div class="stat"><span class="label">Streak</span><div class="stat-val">${longestStreak()}<span style="font-size:13px;color:var(--ink3)">d</span></div><div class="stat-sub">longest active</div></div>
     <div class="stat"><span class="label">Big 3 streak</span><div class="stat-val">${big3Streak()}<span style="font-size:13px;color:var(--ink3)">d</span></div><div class="stat-sub">days all 3 done</div></div>
@@ -1404,6 +1421,8 @@ function submitBig3(type) {
   }
   save();
   renderBig3Status(type);
+  // Refresh stats so header and today-sub update immediately
+  if(type==='daily') renderToday();
 }
 
 function unsubmitBig3(type) {
@@ -1423,6 +1442,8 @@ function renderBig3Status(type) {
   const statusEl = document.getElementById('big3-'+type+'-status');
   const btnEl = document.getElementById('big3-'+type+'-btn');
   if(!statusEl||!btnEl||!arr) return;
+  // Refresh header stats
+  renderHeader();
   const field = type === 'daily' ? 'submittedDay' : 'submittedWeek';
   const timeField = type === 'daily' ? 'submittedDayAt' : 'submittedWeekAt';
   const done = arr.filter(x=>x.done&&x.t.trim()).length;
@@ -2997,6 +3018,76 @@ function noteFormat(command, value) {
   document.execCommand(command, false, value||null);
 }
 
+
+
+function handleNoteKeydown(e) {
+  if(e.key === 'Tab') {
+    e.preventDefault();
+    if(e.shiftKey) {
+      document.execCommand('outdent', false, null);
+    } else {
+      document.execCommand('indent', false, null);
+    }
+    saveCurrentNote();
+    return;
+  }
+  if(e.key === 'Enter' && e.shiftKey) {
+    e.preventDefault();
+    document.execCommand('insertLineBreak', false, null);
+    saveCurrentNote();
+    return;
+  }
+  // Markdown shortcuts triggered on Space only
+  // Works by finding the current line's block element and replacing it
+  if(e.key === ' ') {
+    const sel = window.getSelection();
+    if(!sel || !sel.rangeCount) return;
+    const range = sel.getRangeAt(0);
+    // Walk up to find the block-level parent inside the editor
+    let node = range.startContainer;
+    while(node && node.id !== 'note-body') {
+      if(node.parentNode && node.parentNode.id === 'note-body') break;
+      node = node.parentNode;
+    }
+    if(!node || node.id === 'note-body') return;
+    const blockEl = node;
+    const text = blockEl.textContent;
+    let tag = null, strip = 0;
+    if(text === '#') { tag='h1'; strip=1; }
+    else if(text === '##') { tag='h2'; strip=2; }
+    else if(text === '###') { tag='h3'; strip=3; }
+    else if(text === '-' || text === '*') { tag='ul'; strip=1; }
+    else if(text === '1.') { tag='ol'; strip=2; }
+    else if(text === '>') { tag='blockquote'; strip=1; }
+    if(!tag) return;
+    e.preventDefault();
+    if(tag === 'ul' || tag === 'ol') {
+      // Replace block with list
+      const list = document.createElement(tag);
+      const li = document.createElement('li');
+      li.innerHTML = '<br>';
+      list.appendChild(li);
+      blockEl.parentNode.replaceChild(list, blockEl);
+      // Place cursor inside li
+      const newRange = document.createRange();
+      newRange.setStart(li, 0);
+      newRange.collapse(true);
+      sel.removeAllRanges();
+      sel.addRange(newRange);
+    } else {
+      // Replace block with heading or blockquote
+      const newEl = document.createElement(tag);
+      newEl.innerHTML = '<br>';
+      blockEl.parentNode.replaceChild(newEl, blockEl);
+      const newRange = document.createRange();
+      newRange.setStart(newEl, 0);
+      newRange.collapse(true);
+      sel.removeAllRanges();
+      sel.addRange(newRange);
+    }
+    saveCurrentNote();
+  }
+}
 
 // ── NOTES AI ──
 function noteAI(type) {
