@@ -543,6 +543,9 @@ select.input{cursor:pointer;}
         <div><div class="section-title">Daily Big 3</div><div style="font-size:12px;color:var(--ink3);">Your 3 most important outcomes today</div></div>
         <span class="label">Hyatt method</span>
       </div>
+      <!-- Completed summary (shows after submit) -->
+      <div id="daily-big3-completed" style="display:none;margin-bottom:14px;padding:12px 14px;background:var(--green-lt);border-radius:var(--radius);border:1px solid var(--green);"></div>
+      <!-- Active Big 3 -->
       <div id="daily-big3"></div>
       <div style="display:flex;align-items:center;justify-content:space-between;margin-top:12px;padding-top:12px;border-top:1px solid var(--border);">
         <div id="big3-daily-status" style="font-size:12px;color:var(--ink3);font-family:'DM Mono',monospace;"></div>
@@ -689,7 +692,17 @@ select.input{cursor:pointer;}
 
   <!-- ══ WEEK ══ -->
   <div id="page-week" class="page">
-    <div style="margin-bottom:24px;"><div class="display">Weekly review</div><div style="font-size:13px;color:var(--ink3);margin-top:4px;">Full Focus Planner framework — Michael Hyatt</div></div>
+    <div style="margin-bottom:20px;">
+      <div class="display">Weekly planner</div>
+      <div style="font-size:13px;color:var(--ink3);margin-top:4px;">Full Focus Planner framework — Michael Hyatt</div>
+    </div>
+    <!-- Week sub-tabs -->
+    <div style="display:flex;gap:2px;background:var(--surface);border-radius:10px;padding:3px;margin-bottom:24px;">
+      <button class="nav-tab active" id="week-tab-review" onclick="switchWeekTab('review',this)" style="flex:1;">Weekly Review</button>
+      <button class="nav-tab" id="week-tab-preview" onclick="switchWeekTab('preview',this)" style="flex:1;">Weekly Preview</button>
+    </div>
+    <!-- Review section -->
+    <div id="week-section-review">
     <div class="card">
       <div class="label" style="margin-bottom:12px;">This week at a glance</div>
       <div class="week-score-grid" id="week-score-grid"></div>
@@ -699,6 +712,8 @@ select.input{cursor:pointer;}
         <div><div class="section-title">Weekly Big 3</div><div style="font-size:12px;color:var(--ink3);">Your 3 most important outcomes this week</div></div>
         <span class="label">Hyatt method</span>
       </div>
+      <!-- Completed weekly summary -->
+      <div id="weekly-big3-completed" style="display:none;margin-bottom:14px;padding:12px 14px;background:var(--green-lt);border-radius:var(--radius);border:1px solid var(--green);"></div>
       <div id="weekly-big3"></div>
       <div style="display:flex;align-items:center;justify-content:space-between;margin-top:12px;padding-top:12px;border-top:1px solid var(--border);">
         <div id="big3-weekly-status" style="font-size:12px;color:var(--ink3);font-family:'DM Mono',monospace;"></div>
@@ -712,6 +727,29 @@ select.input{cursor:pointer;}
     <div id="weekly-coach-ai" style="display:none;margin-top:14px;" class="ai-panel">
       <div class="ai-header"><div class="ai-dot"></div><div class="ai-label">Claude weekly summary</div></div>
       <div class="ai-text" id="weekly-coach-text"></div>
+    </div>
+    </div><!-- end week-section-review -->
+
+    <!-- Preview section -->
+    <div id="week-section-preview" style="display:none;">
+      <div class="card" style="margin-bottom:14px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+          <div>
+            <div class="section-title">Next Week's Big 3</div>
+            <div style="font-size:12px;color:var(--ink3);">Your 3 most important outcomes for next week</div>
+          </div>
+          <span class="label">Hyatt method</span>
+        </div>
+        <div id="weekly-preview-big3"></div>
+      </div>
+      <div id="weekly-preview-list"></div>
+      <div style="display:flex;gap:8px;margin-top:4px;">
+        <button class="btn gold" onclick="coachAI('preview')">Generate preview coaching ↗</button>
+      </div>
+      <div id="preview-coach-ai" style="display:none;margin-top:14px;" class="ai-panel">
+        <div class="ai-header"><div class="ai-dot"></div><div class="ai-label">Claude weekly preview</div></div>
+        <div class="ai-text" id="preview-coach-text"></div>
+      </div>
     </div>
   </div>
 
@@ -1302,6 +1340,16 @@ const DAILY_REVIEW_Qs = [
   {q:'What would I do differently if I could replay today?', src:'Your Best Year Ever — Michael Hyatt'}
 ];
 
+const WEEKLY_PREVIEW_Qs = [
+  {q:'What are my top priorities for next week? What must happen for the week to be a win?', src:'Full Focus Planner — Weekly Preview, Michael Hyatt'},
+  {q:'What projects or goals need focused attention next week?', src:'Full Focus Planner — Michael Hyatt'},
+  {q:'What appointments, events, or commitments do I have next week that need preparation?', src:'Full Focus Planner — Michael Hyatt'},
+  {q:'Who do I need to connect with or invest in next week? Any relationship priorities?', src:'Living Forward — Michael Hyatt'},
+  {q:'What is one thing I can do next week to invest in my spiritual life?', src:'Full Focus Planner — faith edition'},
+  {q:'What habits or disciplines do I need to protect next week?', src:'Free to Focus — Michael Hyatt'},
+  {q:'Is there anything I need to say no to next week to protect my priorities?', src:'Free to Focus — Michael Hyatt'}
+];
+
 const WEEKLY_Qs = [
   {q:'What were my wins this week? What went well and why?', src:'Full Focus Planner — Weekly Review, Michael Hyatt'},
   {q:'What were my struggles? What got in the way?', src:'Full Focus Planner — Michael Hyatt'},
@@ -1448,6 +1496,7 @@ async function load() {
   if(!S.dayPlan) S.dayPlan = {};
   if(!S.tasks) S.tasks = [];
   if(!S.notes) S.notes = [];
+  if(!S.weeklyPreview) S.weeklyPreview = {};
   if(!S.ashley) S.ashley = {};
 
   const today = todayKey(), wk = weekKey();
@@ -1651,21 +1700,45 @@ function submitBig3(type) {
   const key = type === 'daily' ? today : wk;
   const arr = type === 'daily' ? S.dailyBig3[key] : S.weeklyBig3[key];
   if(!arr) return;
-  const filled = arr.filter(x=>x.t.trim()).length;
+  const filled = arr.filter(x=>x.t&&x.t.trim()).length;
   if(!filled) { alert('Add at least one item first.'); return; }
   const field = type === 'daily' ? 'submittedDay' : 'submittedWeek';
   const timeField = type === 'daily' ? 'submittedDayAt' : 'submittedWeekAt';
+  const timestamp = new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
+  
   if(type==='daily') {
     S.dailyBig3[key][field] = true;
-    S.dailyBig3[key][timeField] = new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
+    S.dailyBig3[key][timeField] = timestamp;
+    // Prep tomorrow's slots so user can plan ahead
+    const tomorrow = getTomorrowKey();
+    if(!S.dailyBig3[tomorrow]) {
+      S.dailyBig3[tomorrow] = [{t:'',done:false},{t:'',done:false},{t:'',done:false}];
+    }
   } else {
     S.weeklyBig3[key][field] = true;
     S.weeklyBig3[key][timeField] = new Date().toLocaleDateString('en-US',{month:'short',day:'numeric'});
+    // Prep next week
+    const nextWk = getNextWeekKey();
+    if(!S.weeklyBig3[nextWk]) {
+      S.weeklyBig3[nextWk] = [{t:'',done:false},{t:'',done:false},{t:'',done:false}];
+    }
   }
   save();
   renderBig3Status(type);
-  // Refresh stats so header and today-sub update immediately
   if(type==='daily') renderToday();
+}
+
+function getTomorrowKey() {
+  const d = new Date();
+  d.setDate(d.getDate()+1);
+  return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
+}
+
+function getNextWeekKey() {
+  const d = new Date(), day = d.getDay();
+  const nextSun = new Date(d);
+  nextSun.setDate(d.getDate() + (7 - day));
+  return 'w'+nextSun.getFullYear()+pad(nextSun.getMonth()+1)+pad(nextSun.getDate());
 }
 
 function unsubmitBig3(type) {
@@ -1684,19 +1757,63 @@ function renderBig3Status(type) {
   const arr = type === 'daily' ? S.dailyBig3[key] : S.weeklyBig3[key];
   const statusEl = document.getElementById('big3-'+type+'-status');
   const btnEl = document.getElementById('big3-'+type+'-btn');
+  const completedEl = document.getElementById((type==='daily'?'daily':'weekly')+'-big3-completed');
   if(!statusEl||!btnEl||!arr) return;
-  // Refresh header stats
   renderHeader();
   const field = type === 'daily' ? 'submittedDay' : 'submittedWeek';
   const timeField = type === 'daily' ? 'submittedDayAt' : 'submittedWeekAt';
-  const done = arr.filter(x=>x.done&&x.t.trim()).length;
-  const total = arr.filter(x=>x.t.trim()).length;
+  const done = arr.filter(x=>x.done&&x.t&&x.t.trim()).length;
+  const total = arr.filter(x=>x.t&&x.t.trim()).length;
+
   if(arr[field]) {
-    statusEl.innerHTML = '<span style="color:var(--green);">✓ Submitted at '+arr[timeField]+'</span> &nbsp;·&nbsp; '+done+'/'+total+' complete';
-    btnEl.textContent = 'Edit';
+    // Show green completed summary
+    if(completedEl) {
+      const items = arr.filter(x=>x.t&&x.t.trim());
+      completedEl.style.display = 'block';
+      completedEl.innerHTML = '<div style="font-size:11px;font-weight:600;color:var(--green);margin-bottom:8px;">✓ SUBMITTED AT '+arr[timeField]+' — '+done+'/'+total+' COMPLETE</div>'
+        + items.map((x,i)=>'<div style="display:flex;align-items:center;gap:8px;padding:3px 0;font-size:13px;color:var(--ink2);">'
+          +'<span style="color:'+(x.done?'var(--green)':'var(--ink4)')+';">'+(x.done?'✓':'○')+'</span>'
+          +'<span style="'+(x.done?'text-decoration:line-through;color:var(--ink3);':'')+'">'+(i+1)+'. '+x.t+'</span>'
+          +'</div>').join('');
+    }
+
+    // Show next day/week Big 3 input below
+    const nextKey = type==='daily' ? getTomorrowKey() : getNextWeekKey();
+    if(type==='daily') {
+      if(!S.dailyBig3[nextKey]) S.dailyBig3[nextKey]=[{t:'',done:false},{t:'',done:false},{t:'',done:false}];
+    } else {
+      if(!S.weeklyBig3[nextKey]) S.weeklyBig3[nextKey]=[{t:'',done:false},{t:'',done:false},{t:'',done:false}];
+    }
+    const nextArr = type==='daily' ? S.dailyBig3[nextKey] : S.weeklyBig3[nextKey];
+    const nextLabel = type==='daily' ? "Tomorrow's Big 3" : "Next Week's Big 3";
+    const nextPlaceholder = type==='daily' ? 'tomorrow' : 'next week';
+
+    // Render next-day slots into the main big3 container
+    const containerId = (type==='daily'?'daily':'weekly')+'-big3';
+    const wrap = document.getElementById(containerId);
+    if(wrap) {
+      // Clear and add label
+      wrap.innerHTML = '<div style="font-size:11px;font-weight:600;color:var(--ink3);letter-spacing:0.5px;margin-bottom:10px;padding-top:4px;">'+nextLabel.toUpperCase()+'</div>';
+      // Render editable slots for next day
+      nextArr.forEach((item,i)=>{
+        const div = document.createElement('div');
+        div.className = 'big3-item'+(item.done?' done':'');
+        div.innerHTML = '<div class="big3-num">'+(i+1)+'.</div>'
+          +'<textarea class="big3-ta" rows="1" placeholder="Plan for '+nextPlaceholder+'...">'+( item.t||'')+'</textarea>'
+          +'<div class="big3-check" style="opacity:0.3;pointer-events:none;"></div>';
+        const ta = div.querySelector('textarea');
+        ta.oninput = function() { nextArr[i].t=this.value; save(); autoH(this); };
+        setTimeout(()=>autoH(ta),0);
+        wrap.appendChild(div);
+      });
+    }
+
+    statusEl.innerHTML = '';
+    btnEl.textContent = 'Edit today';
     btnEl.onclick = ()=>unsubmitBig3(type);
     btnEl.className = 'btn sm';
   } else {
+    if(completedEl) completedEl.style.display='none';
     statusEl.textContent = done+' of '+total+' checked off';
     btnEl.textContent = type==='daily' ? 'Submit for the day ✓' : 'Submit for the week ✓';
     btnEl.onclick = ()=>submitBig3(type);
@@ -2343,6 +2460,43 @@ async function runNoteAI(prompt) {
   await callClaude(prompt, el);
 }
 
+
+// ══ WEEKLY PREVIEW ══
+function switchWeekTab(tab, el) {
+  document.getElementById('week-section-review').style.display = tab==='review' ? 'block' : 'none';
+  document.getElementById('week-section-preview').style.display = tab==='preview' ? 'block' : 'none';
+  document.querySelectorAll('#page-week .nav-tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  if(tab==='preview') renderWeeklyPreview();
+}
+
+function renderWeeklyPreview() {
+  const nextWk = getNextWeekKey();
+  if(!S.weeklyBig3[nextWk]) S.weeklyBig3[nextWk]=[{t:'',done:false},{t:'',done:false},{t:'',done:false}];
+  if(!S.weeklyPreview) S.weeklyPreview={};
+  if(!S.weeklyPreview[nextWk]) S.weeklyPreview[nextWk]={};
+  
+  renderBig3('weekly-preview-big3', S.weeklyBig3[nextWk], 'weekly');
+
+  const wrap = document.getElementById('weekly-preview-list');
+  if(!wrap) return;
+  wrap.innerHTML='';
+  WEEKLY_PREVIEW_Qs.forEach((q,i)=>{
+    const div = document.createElement('div');
+    div.className='card'; div.style.marginBottom='12px';
+    div.innerHTML='<div class="prompt-block" style="margin-bottom:10px;">'
+      +'<div class="prompt-q">'+q.q+'</div>'
+      +'<div class="prompt-src">'+q.src+'</div>'
+      +'</div>'
+      +'<textarea class="input" style="width:100%;" placeholder="Your plan..." id="wp-'+i+'">'+( S.weeklyPreview[nextWk][i]||'')+'</textarea>';
+    wrap.appendChild(div);
+    setTimeout(()=>{
+      const ta=document.getElementById('wp-'+i);
+      if(ta){ta.oninput=function(){if(!S.weeklyPreview[nextWk])S.weeklyPreview[nextWk]={};S.weeklyPreview[nextWk][i]=this.value;save();};}
+    },0);
+  });
+}
+
 // ══ RENDER MAP ══
 const renders={today:renderToday,habits:renderHabitsPage,goals:renderGoalsPage,tasks:renderTasksPage,reflect:renderReflect,week:renderWeek,fitness:renderFitness,devotional:renderDevotional,journal:renderJournal,notes:renderNotes,ashley:renderAshley};
 
@@ -2378,8 +2532,8 @@ async function brainDumpAI(){
 
 // ══ COACHING AI ══
 async function coachAI(type) {
-  const wrapId={daily:'daily-coach-ai',review:'review-coach-ai',weekly:'weekly-coach-ai'}[type];
-  const textId={daily:'daily-coach-text',review:'review-coach-text',weekly:'weekly-coach-text'}[type];
+  let wrapId={daily:'daily-coach-ai',review:'review-coach-ai',weekly:'weekly-coach-ai',preview:'preview-coach-ai'}[type]||'preview-coach-ai';
+  let textId={daily:'daily-coach-text',review:'review-coach-text',weekly:'weekly-coach-text',preview:'preview-coach-text'}[type]||'preview-coach-text';
   const wrap=document.getElementById(wrapId), el=document.getElementById(textId);
   wrap.style.display='block'; el.className='ai-text loading'; el.textContent='Generating coaching insight...';
 
@@ -2397,10 +2551,17 @@ async function coachAI(type) {
   } else if(type==='review') {
     const answers=DAILY_REVIEW_Qs.map((q,i)=>`Q: ${q.q}\nA: ${S.dailyReview[today]?.[i]||'(blank)'}`).join('\n\n');
     prompt=`Parker Nelson's daily review. Habits: ${hDone}/${hTotal}. Goals: ${goalsSummary||'none'}.\n\n${answers}\n\nWrite a 3–4 sentence coaching summary. Identify one pattern, one strength, one growth edge. Use Hyatt's Full Focus framework. Faith-anchored, direct.`;
-  } else {
+  } else if(type==='weekly') {
     const answers=WEEKLY_Qs.map((q,i)=>`Q: ${q.q}\nA: ${S.weeklyReview[wk]?.[i]||'(blank)'}`).join('\n\n');
     const wb3=S.weeklyBig3[wk].map((x,i)=>`${i+1}. ${x.t||'blank'} [${x.done?'done':'not done'}]`).join(', ');
-    prompt=`Parker Nelson's weekly review. Weekly Big 3: ${wb3}. Goals: ${goalsSummary||'none'}.\n\n${answers}\n\nWrite a 4–5 sentence weekly coaching summary. Identify his biggest win, biggest blind spot, and top priority next week. Apply Hyatt's Full Focus Planner philosophy. End with a challenge question for next week.`;
+    prompt=`Parker Nelson's weekly review. Weekly Big 3: ${wb3}. Goals: ${goalsSummary||'none'}.\n\n${answers}\n\nWrite a 4-5 sentence weekly coaching summary. Identify his biggest win, biggest blind spot, and top priority next week. Apply Hyatt's Full Focus Planner philosophy. End with a challenge question for next week.`;
+  } else if(type==='preview') {
+    const nextWk = getNextWeekKey();
+    const nb3 = (S.weeklyBig3[nextWk]||[]).map((x,i)=>`${i+1}. ${x.t||'blank'}`).join(', ');
+    const preview = S.weeklyPreview?.[nextWk]||{};
+    const answers = WEEKLY_PREVIEW_Qs.map((q,i)=>`Q: ${q.q}\nA: ${preview[i]||'(blank)'}`).join('\n\n');
+    wrapId='preview-coach-ai'; textId='preview-coach-text';
+    prompt=`Parker Nelson's weekly preview for next week. Next Week Big 3: ${nb3}. Goals: ${goalsSummary||'none'}.\n\n${answers}\n\nWrite a focused 3-4 sentence preview coaching response. Affirm his priorities, identify any gaps or risks in his plan, and give one sharp insight to make next week exceptional. Apply Hyatt's Full Focus Planner Weekly Preview framework.`;
   }
   await callClaude(prompt, el);
 }
@@ -3498,6 +3659,7 @@ function saveDayPlan() {
   if(!S.dayPlan) S.dayPlan = {};
   if(!S.tasks) S.tasks = [];
   if(!S.notes) S.notes = [];
+  if(!S.weeklyPreview) S.weeklyPreview = {};
   if(!S.ashley) S.ashley = {};
   if(!S.dayPlan[today]) S.dayPlan[today] = {events:[], priorities:''};
   S.dayPlan[today].priorities = document.getElementById('day-priorities').value;
@@ -3513,6 +3675,7 @@ function addCalEvent() {
   if(!S.dayPlan) S.dayPlan = {};
   if(!S.tasks) S.tasks = [];
   if(!S.notes) S.notes = [];
+  if(!S.weeklyPreview) S.weeklyPreview = {};
   if(!S.ashley) S.ashley = {};
   if(!S.dayPlan[today]) S.dayPlan[today] = {events:[], priorities:''};
   const time = timeEl.value;
@@ -3644,6 +3807,7 @@ function mobileNav(pageId, el) {
   if(!S.dayPlan) S.dayPlan = {};
   if(!S.tasks) S.tasks = [];
   if(!S.notes) S.notes = [];
+  if(!S.weeklyPreview) S.weeklyPreview = {};
   if(!S.ashley) S.ashley = {};
   if(!S.macros) S.macros = {};
   if(!S.workouts) S.workouts = [];
