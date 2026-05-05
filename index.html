@@ -592,7 +592,8 @@ select.input{cursor:pointer;}
         <div class="prompt-src" id="reflect-src">—</div>
       </div>
       <textarea class="input" id="daily-reflect-text" placeholder="Write your reflection here..." style="width:100%;"></textarea>
-      <div style="display:flex;gap:8px;align-items:center;margin-top:10px;">
+      <div style="display:flex;gap:8px;align-items:center;margin-top:10px;flex-wrap:wrap;">
+        <button class="btn primary" onclick="saveReflection()">Save reflection ✓</button>
         <button class="btn gold" onclick="coachAI('daily')">Get coaching insight ↗</button>
         <span id="reflect-saved" style="font-size:11px;color:var(--green);opacity:0;transition:opacity 0.3s;font-family:'DM Mono',monospace;">saved</span>
       </div>
@@ -1509,6 +1510,17 @@ function big3Streak() {
   return streak;
 }
 
+
+function saveReflection() {
+  const today = todayKey();
+  const text = document.getElementById('daily-reflect-text').value.trim();
+  if(!text) { alert('Write something first!'); return; }
+  S.dailyReflect[today] = text;
+  save();
+  const s = document.getElementById('reflect-saved');
+  if(s) { s.textContent = '✓ Saved'; s.style.opacity='1'; setTimeout(()=>s.style.opacity='0', 2500); }
+}
+
 function longestStreak() {
   if(!S.habits.length) return 0;
   return Math.max(0,...S.habits.map(h=>habitStreakCount(h.id)));
@@ -2065,16 +2077,27 @@ async function coachAI(type) {
 }
 
 async function callClaude(prompt, el) {
+  const key = getAPIKey();
+  if(!key) {
+    el.className='ai-text';
+    el.textContent='No API key set. Click "API key" in the top right to add yours.';
+    return;
+  }
   try {
     const res=await fetch('https://api.anthropic.com/v1/messages',{
       method:'POST',headers:getAPIHeaders(),
       body:JSON.stringify({model:'claude-sonnet-4-5',max_tokens:1000,messages:[{role:'user',content:prompt}]})
     });
     const data=await res.json();
+    if(data.error) {
+      el.className='ai-text';
+      el.textContent='API error: '+data.error.message+' ('+data.error.type+')';
+      return;
+    }
     const text=data.content?.find(b=>b.type==='text')?.text||'Unable to generate response.';
     el.className='ai-text'; el.textContent=text;
   } catch(e){
-    el.className='ai-text'; el.textContent='Could not reach Claude. Check your connection and try again.';
+    el.className='ai-text'; el.textContent='Could not reach Claude: '+e.message;
   }
 }
 
