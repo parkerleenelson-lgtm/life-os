@@ -4298,18 +4298,20 @@ function setFirebaseStatus(status) {
 
 // Force sync when app comes back to foreground (important for mobile)
 document.addEventListener('visibilitychange', async () => {
-  if(document.visibilityState === 'visible' && fbInitialized && window._fbDb) {
+  if(document.visibilityState === 'visible' && fbInitialized) {
     try {
-      const snap = await window._fbDb.doc(USER_PATH).get();
-      if(snap.exists) {
-        const parsed = JSON.parse(snap.data().data);
+      const res = await fetch(RTDB_URL+'/users/parker/data.json');
+      if(!res.ok) return;
+      const data = await res.json();
+      if(data && data.state) {
+        const parsed = JSON.parse(data.state);
         delete parsed.apiKey;
         S = parsed;
         initDefaults();
         fitLoad(); devLoad(); renderToday();
         setFirebaseStatus('synced');
       }
-    } catch(e) { console.warn('Visibility sync failed:', e); }
+    } catch(e) { console.warn('Visibility sync failed:', e.message); }
   }
 });
 
@@ -4390,9 +4392,13 @@ async function syncNow() {
   if(fbInitialized) {
     try {
       const saveData = {...S}; delete saveData.apiKey;
-      await window._fbDb.doc(USER_PATH).set({data: JSON.stringify(saveData)}, {merge: true});
-      setFirebaseStatus('synced');
-      if(btn) btn.textContent = 'Sync';
+      const res = await fetch(RTDB_URL+'/users/parker/data.json', {
+        method: 'PUT',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({state: JSON.stringify(saveData)})
+      });
+      if(res.ok) { setFirebaseStatus('synced'); if(btn) btn.textContent = 'Sync'; }
+      else throw new Error('Status '+res.status);
     } catch(e) {
       setFirebaseStatus('offline');
       if(btn) btn.textContent = 'Sync';
