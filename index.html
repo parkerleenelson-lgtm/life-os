@@ -2101,14 +2101,14 @@ function renderHabitsPage() {
       weekGrid+=`
         <div class="week-cell">
           <div class="week-cell-day">${dayNames[i]}</div>
-          <div class="week-cell-box${isDone?' done':''}${isToday?' today-cell':''}" onclick="toggleHabitDay('${h.id}','${k}')">${isDone?'✓':''}</div>
+          <div class="week-cell-box${isDone?' done':''}${isToday?' today-cell':''}" onclick="toggleHabitDayWithNote('${h.id}','${k}')">${isDone?'✓':''}</div>
         </div>
       `;
     });
 
     card.innerHTML = `
       <div class="habit-top">
-        <div class="habit-check-big" onclick="toggleHabitToday('${h.id}');renderHabitsPage();">${done?'✓':''}</div>
+        <div class="habit-check-big" onclick="toggleHabitTodayWithNoteFromHabits('${h.id}')">${done?'✓':''}</div>
         <div class="habit-info">
           <div class="habit-name">${h.name}</div>
           <div class="habit-meta">
@@ -3396,10 +3396,13 @@ async function loadDevotional() {
     wrap.innerHTML = '<div style="color:var(--red);font-size:13px;">No API key set. Click "API key" in the header to add yours.</div>';
     return;
   }
+  const d = new Date();
+  const dateStr = d.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'});
+  const devPrompt = 'You are generating a daily Christian devotional for Parker Nelson — a man of deep faith, father to his daughter, living in Frisco TX. Today is '+dateStr+'.\n\nChoose a passage from the NLT (New Living Translation) Bible that is spiritually meaningful and speaks into themes of faith, purpose, fatherhood, integrity, or perseverance. Choose from a wide variety of books — Old and New Testament.\n\nRespond ONLY with valid JSON in this exact format (no markdown, no code fences, no extra text):\n{\n  "reference": "Book Chapter:Verse-Verse",\n  "scripture": "The full scripture text in NLT translation",\n  "context": "2-3 sentences of spiritual context — what was happening, why it matters today",\n  "q1": "First reflection question — personal and specific to the passage",\n  "q2": "Second reflection question — application to daily life, work, or relationships",\n  "q3": "Third reflection question — faith formation or long-term growth"\n}';
   try {
     const res = await fetch('https://api.anthropic.com/v1/messages',{
       method:'POST', headers:getAPIHeaders(),
-      body: JSON.stringify({model:'claude-sonnet-4-5',max_tokens:1000,messages:[{role:'user',content:prompt}]})
+      body: JSON.stringify({model:'claude-sonnet-4-5',max_tokens:1000,messages:[{role:'user',content:devPrompt}]})
     });
     const data = await res.json();
     if(data.error) {
@@ -3585,39 +3588,38 @@ function toggleHabitTodayWithNote(hid) {
   const today = todayKey();
   const wasChecked = S.habitLog[hid][today];
   if(wasChecked) {
-    // Unchecking - just toggle
     S.habitLog[hid][today] = false;
     delete S.habitLog[hid][today+'_note'];
     save(); renderToday(); return;
   }
-  // Checking - mark done then show note modal
+  // Mark done and save
   S.habitLog[hid][today] = true;
   save();
-  renderToday();
-  // Show note modal
+  // Show note modal BEFORE re-rendering so DOM stays stable
   const h = S.habits.find(x=>x.id===hid);
-  if(!h) return;
-  habitNoteContext = {hid, key: today};
-  document.getElementById('hn-habit-name').textContent = h.name;
-  document.getElementById('hn-date-label').textContent = new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
-  document.getElementById('hn-note').value = S.habitLog[hid][today+'_note']||'';
-  document.getElementById('habit-note-modal').classList.add('open');
+  if(!h) { renderToday(); return; }
+  showHabitNoteModal(hid, today, renderToday);
+  renderToday();
 }
 
 function closeHabitNoteModal() {
   document.getElementById('habit-note-modal').classList.remove('open');
+  const ctx = habitNoteContext;
   habitNoteContext = null;
+  if(ctx && ctx.onClose) ctx.onClose();
 }
 
 function saveHabitNote() {
   if(!habitNoteContext) { closeHabitNoteModal(); return; }
-  const {hid, key} = habitNoteContext;
+  const {hid, key, onClose} = habitNoteContext;
   const note = document.getElementById('hn-note').value.trim();
   if(!S.habitLog[hid]) S.habitLog[hid]={};
   if(note) S.habitLog[hid][key+'_note'] = note;
+  else delete S.habitLog[hid][key+'_note'];
   save();
   closeHabitNoteModal();
-  renderHabitsPage();
+  if(onClose) onClose();
+  else { renderToday(); renderHabitsPage(); }
 }
 
 function buildMonthlyView(hid, year, month) {
