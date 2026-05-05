@@ -819,8 +819,8 @@ select.input{cursor:pointer;}
           <textarea class="input" id="dev-a3" placeholder="Your response..." style="width:100%;min-height:70px;"></textarea>
         </div>
         <div style="display:flex;gap:8px;align-items:center;margin-top:8px;">
-          <button class="btn gold" onclick="submitDevotional()">Submit for feedback ↗</button>
-          <span id="dev-saved" style="font-size:11px;color:var(--green);opacity:0;transition:opacity 0.3s;font-family:'DM Mono',monospace;">saved</span>
+          <button class="btn gold" onclick="submitDevotional()">Submit & get feedback ↗</button>
+          <span id="dev-saved" style="font-size:11px;color:var(--green);opacity:0;transition:opacity 0.3s;font-family:'DM Mono',monospace;">✓ Saved</span>
         </div>
       </div>
     </div>
@@ -1861,7 +1861,7 @@ function buildGoalCard(g, dom) {
     <div class="goal-header">
       <div class="goal-title-text">${g.title}</div>
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:5px;flex-shrink:0;">
-        ${daysLeft!==null?'<div style="font-family:\'DM Mono\',monospace;font-size:10px;color:'+(daysLeft<14?'var(--red)':'var(--ink3)')+';">'+(daysLeft>0?daysLeft+'d left':'overdue')+'</div>':''}
+      +'<span style="font-size:9px;letter-spacing:1px;text-transform:uppercase;color:\''+e.color+';">'+e.label+'</span>'
         <div style="display:flex;gap:6px;">
           <button class="btn sm" onclick="openGoalModal('${g.id}')">Edit</button>
           <button class="btn sm danger" onclick="deleteGoal('${g.id}')">Delete</button>
@@ -2067,6 +2067,217 @@ function renderWeek() {
       if(ta){ta.oninput=function(){if(!S.weeklyReview[wk])S.weeklyReview[wk]={};S.weeklyReview[wk][i]=this.value;save();};}
     },0);
   });
+}
+
+
+// ══ JOURNAL ══
+function renderJournal() {
+  const list = document.getElementById('journal-list');
+  const empty = document.getElementById('journal-empty');
+  if(!list) return;
+  const search = (document.getElementById('journal-search')?.value||'').toLowerCase();
+  const filter = document.getElementById('journal-filter')?.value||'all';
+  const entries = [];
+  const today = todayKey();
+  if(filter==='all'||filter==='big3') {
+    Object.entries(S.dailyBig3||{}).forEach(([date,items])=>{
+      if(!items||!items.length) return;
+      const all = items.filter(x=>x.t&&x.t.trim());
+      if(!all.length) return;
+      const done = all.filter(x=>x.done);
+      const text = items.map((x,i)=>(x.done?'✓':'·')+' '+x.t).filter(x=>x.length>3).join(' | ');
+      const allDone = done.length===3&&all.length===3;
+      entries.push({date,type:'big3',label:allDone?'Big 3 — Complete ✓':'Big 3',color:allDone?'var(--green)':'var(--ink3)',text});
+    });
+  }
+  if(filter==='all'||filter==='brain') {
+    Object.entries(S.brainDump||{}).forEach(([date,text])=>{
+      if(text&&text.trim()) entries.push({date,type:'brain',label:'Brain dump',color:'var(--ink3)',text:text.trim()});
+    });
+  }
+  if(filter==='all'||filter==='reflect') {
+    Object.entries(S.dailyReflect||{}).forEach(([date,text])=>{
+      if(text&&text.trim()) entries.push({date,type:'reflect',label:'Reflection',color:'var(--gold)',text:text.trim()});
+    });
+  }
+  if(filter==='all'||filter==='review') {
+    Object.entries(S.dailyReview||{}).forEach(([date,answers])=>{
+      const text=Object.values(answers).filter(Boolean).join(' | ');
+      if(text.trim()) entries.push({date,type:'review',label:'Daily review',color:'var(--green)',text:text.trim()});
+    });
+  }
+  if(filter==='all'||filter==='weekly') {
+    Object.entries(S.weeklyReview||{}).forEach(([wk,answers])=>{
+      const text=Object.values(answers).filter(Boolean).join(' | ');
+      if(text.trim()) {
+        const wkStr=wk.replace('w','');
+        const date=wkStr.slice(0,4)+'-'+wkStr.slice(4,6)+'-'+wkStr.slice(6,8);
+        entries.push({date,type:'weekly',label:'Weekly review',color:'#1a5276',text:text.trim()});
+      }
+    });
+  }
+  if(filter==='all'||filter==='devotional') {
+    Object.entries(S.devotionals||{}).forEach(([date,d])=>{
+      const text=[d.a1,d.a2,d.a3].filter(Boolean).join(' | ');
+      if(text.trim()) entries.push({date,type:'devotional',label:d.reference||'Devotional',color:'var(--gold)',text:text.trim(),scripture:d.scripture});
+    });
+  }
+  entries.sort((a,b)=>b.date.localeCompare(a.date));
+  const filtered = search ? entries.filter(e=>e.text.toLowerCase().includes(search)||e.label.toLowerCase().includes(search)||e.date.includes(search)) : entries;
+  if(!filtered.length) { list.innerHTML=''; if(empty)empty.style.display='block'; return; }
+  if(empty)empty.style.display='none';
+  list.innerHTML = filtered.map(e=>{
+    const preview = e.text.length>200 ? e.text.slice(0,200)+'...' : e.text;
+    const d = new Date(e.date+'T12:00:00');
+    const dateStr = d.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric',year:'numeric'});
+    const scriptureHtml = e.scripture ? '<div style="font-size:12px;color:var(--gold);font-style:italic;margin-bottom:6px;">'+e.scripture.slice(0,100)+'...</div>' : '';
+    return '<div class="card" style="margin-bottom:12px;border-left:3px solid '+e.color+';">'
+      +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">'
+      +'<span style="font-size:9px;letter-spacing:1px;text-transform:uppercase;color:'+e.color+';">'+e.label+'</span>'
+      +'<span style="font-size:10px;color:var(--ink4);">'+dateStr+'</span>'
+      +'</div>'
+      +scriptureHtml
+      +'<div style="font-size:13px;color:var(--ink2);line-height:1.65;">'+preview+'</div>'
+      +'</div>';
+  }).join('');
+}
+
+// ══ NOTES ══
+let currentNoteId = null;
+let noteSaveTimer = null;
+
+function notesLoad() { if(!S.notes) S.notes = []; }
+
+function renderNotes() {
+  notesLoad();
+  renderNotesList();
+  if(currentNoteId) {
+    const note = S.notes.find(n=>n.id===currentNoteId);
+    if(note) openNote(note.id);
+  }
+}
+
+function renderNotesList() {
+  notesLoad();
+  const search = (document.getElementById('notes-search')?.value||'').toLowerCase();
+  const list = document.getElementById('notes-list');
+  const empty = document.getElementById('notes-empty-sidebar');
+  if(!list) return;
+  const filtered = S.notes.filter(n=>!search||n.title.toLowerCase().includes(search)||(n.bodyText||'').toLowerCase().includes(search)).sort((a,b)=>b.updatedAt.localeCompare(a.updatedAt));
+  if(!filtered.length) { list.innerHTML=''; if(empty)empty.style.display='block'; return; }
+  if(empty)empty.style.display='none';
+  list.innerHTML = filtered.map(n=>{
+    const isActive = n.id===currentNoteId;
+    const d = new Date(n.updatedAt);
+    const dateStr = d.toLocaleDateString('en-US',{month:'short',day:'numeric'});
+    const preview = (n.bodyText||'').slice(0,60)||'No content';
+    return '<div class="note-card'+(isActive?' active-note':'')+'" data-nid="'+n.id+'" onclick="openNote(this.dataset.nid)">'
+      +'<div style="font-size:13px;font-weight:600;color:var(--ink);margin-bottom:3px;">'+(n.title||'Untitled')+'</div>'
+      +'<div class="note-date">'+dateStr+'</div>'
+      +'<div class="note-preview">'+preview+'</div>'
+      +'</div>';
+  }).join('');
+}
+
+function newNote() {
+  notesLoad();
+  const note = {id:'n'+Date.now(),title:'',body:'',bodyText:'',createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()};
+  S.notes.unshift(note);
+  save();
+  openNote(note.id);
+  renderNotesList();
+  setTimeout(()=>{const el=document.getElementById('note-title'); if(el) el.focus();},100);
+}
+
+function openNote(nid) {
+  notesLoad();
+  currentNoteId = nid;
+  const note = S.notes.find(n=>n.id===nid);
+  if(!note) return;
+  document.getElementById('notes-placeholder').style.display='none';
+  document.getElementById('notes-editor').style.display='block';
+  document.getElementById('note-title').value = note.title||'';
+  document.getElementById('note-body').innerHTML = note.body||'';
+  renderNotesList();
+}
+
+function saveCurrentNote() {
+  if(!currentNoteId) return;
+  const note = S.notes.find(n=>n.id===currentNoteId);
+  if(!note) return;
+  note.title = document.getElementById('note-title').value.trim();
+  const bodyEl = document.getElementById('note-body');
+  note.body = bodyEl.innerHTML;
+  note.bodyText = bodyEl.innerText||bodyEl.textContent||'';
+  note.updatedAt = new Date().toISOString();
+  if(noteSaveTimer) clearTimeout(noteSaveTimer);
+  noteSaveTimer = setTimeout(()=>{save(); renderNotesList();}, 600);
+}
+
+function deleteCurrentNote() {
+  if(!currentNoteId) return;
+  const note = S.notes.find(n=>n.id===currentNoteId);
+  if(!window.confirm('Delete "'+(note?note.title||'Untitled':'this note')+'"?')) return;
+  S.notes = S.notes.filter(n=>n.id!==currentNoteId);
+  currentNoteId = null;
+  save();
+  const ph=document.getElementById('notes-placeholder'); if(ph) ph.style.display='block';
+  const ed=document.getElementById('notes-editor'); if(ed) ed.style.display='none';
+  renderNotesList();
+}
+
+function noteFormat(command, value) {
+  document.getElementById('note-body').focus();
+  document.execCommand(command, false, value||null);
+}
+
+function handleNoteKeydown(e) {
+  if(e.key==='Tab') { e.preventDefault(); if(e.shiftKey) document.execCommand('outdent',false,null); else document.execCommand('indent',false,null); saveCurrentNote(); return; }
+  if(e.key==='Enter'&&e.shiftKey) { e.preventDefault(); document.execCommand('insertLineBreak',false,null); saveCurrentNote(); return; }
+  if(e.key===' ') {
+    const sel=window.getSelection(); if(!sel||!sel.rangeCount) return;
+    const range=sel.getRangeAt(0);
+    let node=range.startContainer;
+    while(node&&node.id!=='note-body') { if(node.parentNode&&node.parentNode.id==='note-body') break; node=node.parentNode; }
+    if(!node||node.id==='note-body') return;
+    const blockEl=node; const text=blockEl.textContent;
+    let tag=null;
+    if(text==='#'){tag='h1';}else if(text==='##'){tag='h2';}else if(text==='###'){tag='h3';}else if(text==='-'||text==='*'){tag='ul';}else if(text==='1.'){tag='ol';}else if(text==='>'){tag='blockquote';}
+    if(!tag) return;
+    e.preventDefault();
+    if(tag==='ul'||tag==='ol') { const list=document.createElement(tag); const li=document.createElement('li'); li.innerHTML='<br>'; list.appendChild(li); blockEl.parentNode.replaceChild(list,blockEl); const nr=document.createRange(); nr.setStart(li,0); nr.collapse(true); sel.removeAllRanges(); sel.addRange(nr); }
+    else { const newEl=document.createElement(tag); newEl.innerHTML='<br>'; blockEl.parentNode.replaceChild(newEl,blockEl); const nr=document.createRange(); nr.setStart(newEl,0); nr.collapse(true); sel.removeAllRanges(); sel.addRange(nr); }
+    saveCurrentNote();
+  }
+}
+
+function noteAI(type) {
+  const note = currentNoteId ? S.notes.find(n=>n.id===currentNoteId) : null;
+  if(!note||!note.bodyText) { alert('Write something in the note first.'); return; }
+  const title = note.title||'Untitled';
+  const body = note.bodyText;
+  const prompts = {
+    summarize: 'Summarize this note in 2-3 crisp sentences. Pull out the core idea and key points.\n\nNote title: '+title+'\n\nNote content:\n'+body,
+    clarify: 'Help clarify the thinking in this note: what is the core question or decision? What assumptions are being made? What is missing? Be direct.\n\nNote title: '+title+'\n\nNote content:\n'+body,
+    actions: 'Extract all action items, next steps, and commitments from this note as a numbered list.\n\nNote title: '+title+'\n\nNote content:\n'+body,
+    expand: 'Help expand this idea: what are the implications? What related ideas connect to this? Give 3-4 specific directions to explore.\n\nNote title: '+title+'\n\nNote content:\n'+body
+  };
+  runNoteAI(prompts[type]);
+}
+
+function noteCustomAI() {
+  const q = document.getElementById('note-ai-input').value.trim();
+  if(!q) { alert('Type a question first.'); return; }
+  const note = currentNoteId ? S.notes.find(n=>n.id===currentNoteId) : null;
+  const context = note ? '\n\nNote title: '+(note.title||'Untitled')+'\n\nNote content:\n'+(note.bodyText||'(empty)') : '';
+  runNoteAI('Question: '+q+context+'\n\nAnswer directly and specifically.');
+}
+
+async function runNoteAI(prompt) {
+  const panel=document.getElementById('note-ai-panel'); const el=document.getElementById('note-ai-text');
+  if(!panel||!el) return;
+  panel.style.display='block'; el.className='ai-text loading'; el.textContent='Thinking...';
+  await callClaude(prompt, el);
 }
 
 // ══ RENDER MAP ══
@@ -2617,45 +2828,13 @@ function loadDevAnswers(today) {
 async function loadDevotional() {
   const wrap = document.getElementById('dev-scripture-wrap');
   if(!wrap) return;
+  // Clear previous answers and feedback for fresh start
+  ['dev-a1','dev-a2','dev-a3'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
+  const fbWrap = document.getElementById('dev-feedback-wrap');
+  if(fbWrap) fbWrap.style.display='none';
   wrap.innerHTML = '<div style="color:var(--ink3);font-style:italic;font-size:13px;">Loading today\'s scripture...</div>';
   const dqwH=document.getElementById('dev-questions-wrap'); if(dqwH) dqwH.style.display='none';
   const dfwH=document.getElementById('dev-feedback-wrap'); if(dfwH) dfwH.style.display='none';
-
-  const today = todayKey();
-  const d = new Date();
-  const dateStr = d.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'});
-  // Build personal context from goals and habits
-  const activeGoals = S.goals.slice(0,5).map(g=>`${g.title} (${DOMAINS.find(d=>d.id===g.domain)?.name||g.domain})`).join(', ') || 'none set yet';
-  const recentDevDates = Object.keys(S.devotionals||{}).sort().slice(-7);
-  const recentRefs = recentDevDates.map(d=>S.devotionals[d]?.reference).filter(Boolean).join(', ') || 'none yet';
-  const recentAnswers = recentDevDates.slice(-3).map(d=>{
-    const dev = S.devotionals[d];
-    return dev?.a1||dev?.a2||dev?.a3 ? `${d}: "${dev.a1||dev.a2||dev.a3}"` : null;
-  }).filter(Boolean).join(' | ') || 'none yet';
-  const b3Today = S.dailyBig3[todayKey()]?.map(x=>x.t).filter(Boolean).join(', ') || 'not set';
-
-  const prompt = `You are generating a daily Christian devotional for Parker Nelson — a man of deep faith, enterprise AE at Workday in Frisco TX, husband, father, intentionally building a life of purpose. Today is ${dateStr}.
-
-Parker's context:
-- Active goals: ${activeGoals}
-- Today's Big 3: ${b3Today}
-- Recent scripture passages (avoid repeating): ${recentRefs}
-- Recent reflection themes from his answers: ${recentAnswers}
-
-Use this context to choose a passage that speaks directly into what Parker is walking through right now — his work, his faith, his family, his growth edges. Don't be generic. If he's working on a vocational goal, find scripture about integrity in work or excellence. If he's in a relational season, speak into that. Vary the books widely — Old and New Testament.
-
-Choose a passage from the NLT (New Living Translation) Bible that is spiritually meaningful and personally relevant to Parker today.
-
-Respond ONLY with valid JSON in this exact format (no markdown, no code fences, no extra text):
-{
-  "reference": "Book Chapter:Verse-Verse",
-  "scripture": "The full scripture text in NLT translation",
-  "context": "2-3 sentences of spiritual context — what was happening, why it matters, how it speaks today",
-  "q1": "First reflection question — personal and specific to the passage",
-  "q2": "Second reflection question — application to daily life, work, or relationships",
-  "q3": "Third reflection question — faith formation, character, or long-term growth"
-}`;
-
   try {
     const res = await fetch('https://api.anthropic.com/v1/messages',{
       method:'POST', headers:getAPIHeaders(),
@@ -2680,7 +2859,23 @@ function saveDevAnswers() {
   if(!S.devotionals[today]) return;
   ['a1','a2','a3'].forEach(k=>{ S.devotionals[today][k]=document.getElementById('dev-'+k).value; });
   save();
-  const s=document.getElementById('dev-saved'); s.style.opacity='1'; setTimeout(()=>s.style.opacity='0',2000);
+  const s=document.getElementById('dev-saved'); if(s){ s.style.opacity='1'; setTimeout(()=>s.style.opacity='0',2000); }
+}
+
+function saveDevotionalAnswers() {
+  const today = todayKey();
+  if(!S.devotionals[today]) { alert('Load a scripture passage first.'); return; }
+  const a1=document.getElementById('dev-a1').value;
+  const a2=document.getElementById('dev-a2').value;
+  const a3=document.getElementById('dev-a3').value;
+  if(!a1.trim()&&!a2.trim()&&!a3.trim()) { alert('Write at least one response first.'); return; }
+  S.devotionals[today].a1=a1;
+  S.devotionals[today].a2=a2;
+  S.devotionals[today].a3=a3;
+  save();
+  renderDevHistory();
+  const s=document.getElementById('dev-saved');
+  if(s){ s.textContent='✓ Saved'; s.style.opacity='1'; setTimeout(()=>{ s.textContent='saved'; s.style.opacity='0'; },2500); }
 }
 
 ['dev-a1','dev-a2','dev-a3'].forEach(id=>{
@@ -2697,18 +2892,22 @@ async function submitDevotional() {
   const a1=document.getElementById('dev-a1').value.trim();
   const a2=document.getElementById('dev-a2').value.trim();
   const a3=document.getElementById('dev-a3').value.trim();
-  if(!a1&&!a2&&!a3){ alert('Write at least one reflection response first.'); return; }
-  saveDevAnswers();
+  if(!a1&&!a2&&!a3) { alert('Write at least one reflection response first.'); return; }
 
+  // 1. Save answers immediately
+  S.devotionals[today].a1=a1;
+  S.devotionals[today].a2=a2;
+  S.devotionals[today].a3=a3;
+  save();
+
+  // 2. Show feedback panel and get AI response
   const feedbackWrap = document.getElementById('dev-feedback-wrap');
-  const feedbackEl   = document.getElementById('dev-feedback-text');
+  const feedbackEl = document.getElementById('dev-feedback-text');
   feedbackWrap.style.display='block';
   feedbackEl.className='ai-text loading';
   feedbackEl.textContent='Reflecting on your responses...';
 
-  const feedGoals = S.goals.slice(0,4).map(g=>g.title+' ('+(g.progress||0)+'%)').join(', ') || 'none set';
-  const feedHabits = S.habits.slice(0,5).map(h=>h.name).join(', ') || 'none set';
-  const prompt = 'You are a thoughtful Christian devotional guide responding to Parker Nelson — enterprise AE at Workday in Frisco TX, husband, father, man of deep faith building intentionally. His active goals: '+feedGoals+'. Daily habits: '+feedHabits+'.'
+  const prompt = 'You are a thoughtful Christian devotional guide responding to Parker Nelson — a man of sincere faith, father to his daughter, living in Frisco TX. He is in a season of intentional spiritual growth and deeper relationship with God.'
     +'\n\nToday\'s scripture (NLT): '+d.reference+'\n"'+d.scripture+'"'
     +'\n\nReflection questions and Parker\'s responses:'
     +'\n\nQ1: '+d.q1+'\nA1: '+(a1||'(not answered)')
@@ -2716,609 +2915,37 @@ async function submitDevotional() {
     +'\n\nQ3: '+d.q3+'\nA3: '+(a3||'(not answered)')
     +'\n\nWrite a warm, pastoral 3-4 paragraph devotional response. Affirm what rings true in his reflections. Offer spiritual insight or a gentle challenge where there is room to grow. Close with a prayer prompt or one-sentence blessing. Tone: like a trusted pastor who knows him well - encouraging, grounded in scripture, never preachy.';
 
-    try {
+  try {
     const res = await fetch('https://api.anthropic.com/v1/messages',{
       method:'POST', headers:getAPIHeaders(),
       body: JSON.stringify({model:'claude-sonnet-4-5',max_tokens:1000,messages:[{role:'user',content:prompt}]})
     });
     const data = await res.json();
+    if(data.error) { feedbackEl.className='ai-text'; feedbackEl.textContent='API error: '+data.error.message; return; }
     const text = data.content?.find(b=>b.type==='text')?.text||'Unable to generate response.';
-    feedbackEl.className='ai-text'; feedbackEl.textContent=text;
-    S.devotionals[today].feedback=text; save();
+    feedbackEl.className='ai-text';
+    feedbackEl.textContent=text;
+
+    // 3. Save feedback to history
+    S.devotionals[today].feedback=text;
+    save();
     renderDevHistory();
+
+    // 4. Show saved confirmation
+    const s=document.getElementById('dev-saved');
+    if(s){ s.style.opacity='1'; setTimeout(()=>s.style.opacity='0', 3000); }
+
+    // 5. Clear answers after a short delay so user can see what was submitted
+    setTimeout(()=>{
+      ['dev-a1','dev-a2','dev-a3'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
+    }, 1500);
+
   } catch(e) {
-    feedbackEl.className='ai-text'; feedbackEl.textContent='Could not reach Claude. Check your connection.';
+    feedbackEl.className='ai-text';
+    feedbackEl.textContent='Could not reach Claude: '+e.message;
   }
 }
 
-function renderDevHistory() {
-  const wrap = document.getElementById('dev-history-list');
-  if(!wrap) return;
-  const entries = Object.entries(S.devotionals||{}).sort((a,b)=>b[0].localeCompare(a[0])).slice(1,8);
-  if(!entries.length){ wrap.innerHTML='<div style="color:var(--ink4);font-size:13px;">Past devotionals will appear here.</div>'; return; }
-  wrap.innerHTML = entries.map(([date,d])=>'<div class="dev-history-item" onclick="viewPastDevotional(\''+date+'\')">'+'<div class="dev-history-date">'+date+'</div>'+'<div class="dev-history-ref">'+(d.reference||'—')+'</div>'+(d.feedback?'<div style="font-size:11px;color:var(--green);margin-top:3px;">✓ Feedback received</div>':'')+'</div>').join('');
-}
-
-function viewPastDevotional(date) {
-  const d = S.devotionals[date];
-  if(!d) return;
-  const parts = [
-    "Scripture: " + (d.reference||date) + " (NLT)",
-    d.scripture||"",
-    d.q1 ? ("Q1: " + d.q1 + "\nA: " + (d.a1||"(not answered)")) : "",
-    d.q2 ? ("Q2: " + d.q2 + "\nA: " + (d.a2||"(not answered)")) : "",
-    d.q3 ? ("Q3: " + d.q3 + "\nA: " + (d.a3||"(not answered)")) : "",
-    d.feedback ? ("Feedback:\n" + d.feedback) : ""
-  ];
-  alert(parts.filter(Boolean).join("\n\n"));
-}
-
-
-
-// ══ JOURNAL ══
-function renderJournal() {
-  const list = document.getElementById('journal-list');
-  const empty = document.getElementById('journal-empty');
-  if(!list) return;
-
-  const search = (document.getElementById('journal-search')?.value||'').toLowerCase();
-  const filter = document.getElementById('journal-filter')?.value||'all';
-
-  const entries = [];
-  const today = todayKey();
-
-  // Daily Big 3
-  if(filter==='all'||filter==='big3') {
-    Object.entries(S.dailyBig3||{}).forEach(([date, items]) => {
-      if(!items||!items.length) return;
-      const done = items.filter(x=>x.done&&x.t.trim());
-      const all = items.filter(x=>x.t.trim());
-      if(!all.length) return;
-      const text = items.map((x,i)=>(x.done?'✓':'·')+' '+x.t).filter(x=>x.length>3).join(' | ');
-      const allDone = done.length===3 && all.length===3;
-      entries.push({date, type:'big3', label: allDone?'Big 3 — Complete ✓':'Big 3', color: allDone?'var(--green)':'var(--ink3)', text});
-    });
-  }
-
-  // Brain dumps
-  if(filter==='all'||filter==='brain') {
-    Object.entries(S.brainDump||{}).forEach(([date, text]) => {
-      if(text&&text.trim()) entries.push({date, type:'brain', label:'Brain dump', color:'var(--ink3)', text: text.trim()});
-    });
-  }
-
-  // Daily reflections
-  if(filter==='all'||filter==='reflect') {
-    Object.entries(S.dailyReflect||{}).forEach(([date, text]) => {
-      if(text&&text.trim()) entries.push({date, type:'reflect', label:'Reflection', color:'var(--gold)', text: text.trim()});
-    });
-  }
-
-  // Daily reviews
-  if(filter==='all'||filter==='review') {
-    Object.entries(S.dailyReview||{}).forEach(([date, answers]) => {
-      const text = Object.values(answers).filter(Boolean).join(' | ');
-      if(text.trim()) entries.push({date, type:'review', label:'Daily review', color:'var(--green)', text: text.trim()});
-    });
-  }
-
-  // Weekly reviews
-  if(filter==='all'||filter==='weekly') {
-    Object.entries(S.weeklyReview||{}).forEach(([wk, answers]) => {
-      const text = Object.values(answers).filter(Boolean).join(' | ');
-      if(text.trim()) {
-        const wkStr = wk.replace('w',''); const date = wkStr.slice(0,4)+'-'+wkStr.slice(4,6)+'-'+wkStr.slice(6,8);
-        entries.push({date, type:'weekly', label:'Weekly review', color:'#1a5276', text: text.trim()});
-      }
-    });
-  }
-
-  // Devotionals
-  if(filter==='all'||filter==='devotional') {
-    Object.entries(S.devotionals||{}).forEach(([date, d]) => {
-      const text = [d.a1, d.a2, d.a3].filter(Boolean).join(' | ');
-      if(text.trim()) entries.push({date, type:'devotional', label: d.reference||'Devotional', color:'var(--gold)', text: text.trim(), scripture: d.scripture});
-    });
-  }
-
-  // Sort newest first
-  entries.sort((a,b) => b.date.localeCompare(a.date));
-
-  // Filter by search
-  const filtered = search ? entries.filter(e => 
-    e.text.toLowerCase().includes(search) || 
-    e.label.toLowerCase().includes(search) ||
-    e.date.includes(search)
-  ) : entries;
-
-  if(!filtered.length) {
-    list.innerHTML=''; empty.style.display='block'; return;
-  }
-  empty.style.display='none';
-
-  list.innerHTML = filtered.map(e => {
-    const preview = e.text.length > 200 ? e.text.slice(0,200)+'...' : e.text;
-    const d = new Date(e.date+'T12:00:00');
-    const dateStr = d.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric',year:'numeric'});
-    const scriptureHtml = e.scripture ? '<div style="font-size:12px;color:var(--gold);font-style:italic;margin-bottom:6px;">'+e.scripture.slice(0,100)+'...</div>' : '';
-    return '<div class="card" style="margin-bottom:12px;border-left:3px solid '+e.color+';">'
-      +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">'
-      +'<span style="font-family:\'DM Mono\',monospace;font-size:9px;letter-spacing:1px;text-transform:uppercase;color:'+e.color+';">'+e.label+'</span>'
-      +'<span style="font-family:\'DM Mono\',monospace;font-size:10px;color:var(--ink4);">'+dateStr+'</span>'
-      +'</div>'
-      +scriptureHtml
-      +'<div style="font-size:13px;color:var(--ink2);line-height:1.65;">'+preview+'</div>'
-      +'</div>';
-  }).join('');
-}
-
-
-// ══ TASKS (GTD) ══
-let editingTaskId = null;
-let modalSubtasks = [];
-let selectedPriority = '';
-let taskFilter = 'all';
-let expandedTasks = new Set();
-let collapsedBuckets = new Set();
-
-const BUCKETS = [
-  {id:'now',    label:'Now',         emoji:'🔥', color:'#8b2020',  desc:'This week'},
-  {id:'next',   label:'Next',        emoji:'→',  color:'#1a5276',  desc:'Do soon'},
-  {id:'later',  label:'Later',       emoji:'○',  color:'#7a7568',  desc:'Someday'},
-  {id:'parking',label:'Parking Lot', emoji:'🅿', color:'#3d3a30',  desc:'Not now'}
-];
-
-function taskLoad() {
-  if(!S.tasks) S.tasks = [];
-  if(!S.notes) S.notes = [];
-  if(!S.ashley) S.ashley = {};
-}
-
-function setTaskFilter(filter, el) {
-  taskFilter = filter;
-  document.querySelectorAll('.filter-chip').forEach(c=>c.classList.remove('active'));
-  el.classList.add('active');
-  renderTasksPage();
-}
-
-function toggleBucket(id) {
-  if(typeof id !== 'string') id = id;
-  if(collapsedBuckets.has(id)) collapsedBuckets.delete(id);
-  else collapsedBuckets.add(id);
-  renderTasksPage();
-}
-
-function toggleTaskExpand(tid) {
-  if(expandedTasks.has(tid)) expandedTasks.delete(tid);
-  else expandedTasks.add(tid);
-  renderTasksPage();
-}
-
-function renderTasksPage() {
-  taskLoad();
-  const empty = document.getElementById('tasks-empty');
-  const filtered = getFilteredTasks();
-
-  if(!S.tasks.length) {
-    BUCKETS.forEach(b => { const el=document.getElementById('tasks-'+b.id); if(el) el.innerHTML=''; });
-    empty.style.display='block';
-    return;
-  }
-  empty.style.display='none';
-
-  BUCKETS.forEach(bucket => {
-    const wrap = document.getElementById('tasks-'+bucket.id);
-    if(!wrap) return;
-    const tasks = filtered.filter(t=>t.bucket===bucket.id);
-    const isCollapsed = collapsedBuckets.has(bucket.id);
-    const chevron = isCollapsed ? '›' : '‹';
-
-    if(!tasks.length && taskFilter!=='all') { wrap.innerHTML=''; return; }
-
-    let html = '<div class="bucket-section">'
-    +'<div class="bucket-header" data-bid="'+bucket.id+'" onclick="toggleBucket(this.dataset.bid)">'
-      +'<span class="bucket-chevron'+(isCollapsed?'':' open')+'">›</span>'
-      +'<div class="bucket-dot" style="background:'+bucket.color+'"></div>'
-      +'<div class="bucket-title">'+bucket.emoji+' '+bucket.label+'</div>'
-      +'<div class="bucket-count">'+tasks.length+' task'+(tasks.length!==1?'s':'')+'</div>'
-      +'</div>';
-
-    if(!isCollapsed) {
-      html += '<div class="task-list">';
-      tasks.forEach(t => { html += buildTaskRow(t); });
-      html += '<div class="add-task-inline" data-bid="'+bucket.id+'" onclick="openTaskModalForBucket(this.dataset.bid)"><span style="font-size:16px;margin-right:2px;">+</span> Add task</div>';
-
-        +'</div>';
-      html += '</div>';
-    }
-    html += '</div>';
-    wrap.innerHTML = html;
-  });
-}
-
-function getFilteredTasks() {
-  taskLoad();
-  return S.tasks.filter(t => {
-    if(taskFilter==='done') return t.done;
-    if(taskFilter==='red') return t.priority==='red' && !t.done;
-    if(taskFilter==='yellow') return t.priority==='yellow' && !t.done;
-    if(taskFilter==='blue') return t.priority==='blue' && !t.done;
-    return !t.done;
-  });
-}
-
-function buildTaskRow(t) {
-  const subtasks = t.subtasks||[];
-  const subDone = subtasks.filter(s=>s.done).length;
-  const isExpanded = expandedTasks.has(t.id);
-  const priorityClass = t.priority||'';
-  const checkClass = (t.done?'checked ':'')+('priority-'+priorityClass);
-  const priorityDot = '';
-
-  let html = '<div class="task-row'+(t.done?' done-task':'')+'">'
-    +'<div class="task-check '+checkClass+'" onclick="toggleTask(this)" data-tid="'+t.id+'">'+(t.done?'✓':'')+'</div>'
-    +'<div class="task-body">'
-    +'<div class="task-title">'+priorityDot+t.title+'</div>'
-    +'<div class="task-meta">';
-
-  if(t.notes) html += '<span class="task-notes-preview">'+t.notes.slice(0,60)+(t.notes.length>60?'...':'')+'</span>';
-  if(subtasks.length) {
-    html += '<span class="task-subtask-count">'+subDone+'/'+subtasks.length+' subtasks</span>';
-    html += '<button class="task-expand-btn" data-tid="'+t.id+'" onclick="toggleTaskExpand(this.dataset.tid)">'+(isExpanded?'▲ hide':'▼ show')+'</button>';
-  }
-  html += '</div></div>';
-
-  // Actions
-  const bucketOptions = BUCKETS.map(b=>'<option value="'+b.id+'"'+(b.id===t.bucket?' selected':'')+'>'+b.emoji+' '+b.label+'</option>').join('');
-  html += '<div class="task-row-actions">'
-    +'<select class="input" style="font-size:11px;padding:3px 5px;width:100px;" data-tid="'+t.id+'" onchange="moveTask(this.dataset.tid,this.value)">'+bucketOptions+'</select>'
-    +'<button class="btn sm" data-tid="'+t.id+'" onclick="openTaskModal(this.dataset.tid)">Edit</button>'
-    +'<button class="btn sm danger" data-tid="'+t.id+'" onclick="deleteTask(this.dataset.tid)">×</button>'
-    +'</div></div>';
-
-  // Subtasks expanded
-  if(isExpanded && subtasks.length) {
-    html += '<div class="subtask-list">';
-    subtasks.forEach((s,i)=>{
-      html += '<div class="subtask-row'+(s.done?' sub-done':'')+'">'
-        +'<div class="subtask-check'+(s.done?' checked':'')+'" data-tid="'+t.id+'" data-idx="'+i+'" onclick="toggleSubtask(this)">'+(s.done?'✓':'')+'</div>'
-        +'<div class="subtask-text">'+s.text+'</div>'
-        +'</div>';
-    });
-    html += '</div>';
-  }
-
-  return html;
-}
-
-function toggleTask(el) {
-  const tid = el.dataset ? el.dataset.tid : el;
-  const t = S.tasks.find(x=>x.id===tid);
-  if(!t) return;
-  t.done = !t.done;
-  t.doneAt = t.done ? new Date().toISOString() : null;
-  save(); renderTasksPage();
-}
-
-function toggleSubtask(el) {
-  const tid = el.dataset.tid;
-  const idx = parseInt(el.dataset.idx);
-  const t = S.tasks.find(x=>x.id===tid);
-  if(!t||!t.subtasks) return;
-  t.subtasks[idx].done = !t.subtasks[idx].done;
-  save(); renderTasksPage();
-}
-
-function moveTask(tid, bucket) {
-  const t = S.tasks.find(x=>x.id===tid);
-  if(!t) return;
-  t.bucket = bucket;
-  save(); renderTasksPage();
-}
-
-function deleteTask(tid) {
-  const t = S.tasks.find(x=>x.id===tid);
-  const title = t ? t.title : 'this task';
-  if(!window.confirm('Delete "'+title+'"?')) return;
-  S.tasks = S.tasks.filter(x=>x.id!==tid);
-  save(); renderTasksPage();
-}
-
-function selectPriority(p) {
-  selectedPriority = selectedPriority===p ? '' : p;
-  ['red','yellow','blue'].forEach(c=>{
-    const btn = document.getElementById('p-'+c);
-    if(btn) btn.className = 'priority-btn'+(selectedPriority===c?' sel-'+c:'');
-  });
-  const label = document.getElementById('priority-label');
-  if(label) label.textContent = selectedPriority ? {red:'🔴 Urgent',yellow:'🟡 Important',blue:'🔵 Someday'}[selectedPriority] : 'None selected';
-}
-
-function addModalSubtask() {
-  const inp = document.getElementById('tm-subtask-input');
-  const notesInp = document.getElementById('tm-subtask-notes');
-  const t = inp.value.trim(); if(!t) return;
-  modalSubtasks.push({text:t, notes:(notesInp?.value.trim()||''), done:false});
-  inp.value='';
-  if(notesInp) notesInp.value='';
-  renderModalSubtasks();
-}
-
-function renderModalSubtasks() {
-  const list = document.getElementById('tm-subtasks-list');
-  if(!list) return;
-  list.innerHTML = modalSubtasks.map((s,i)=>{
-    const notesHtml = s.notes ? '<div style="font-size:11px;color:var(--ink3);font-style:italic;">'+s.notes+'</div>' : '';
-    return '<div style="display:flex;align-items:flex-start;gap:8px;padding:8px 0;border-bottom:1px solid var(--border);">'
-      +'<div style="flex:1;"><div style="font-size:13px;">'+s.text+'</div>'+notesHtml+'</div>'
-      +'<button class="btn sm danger" data-idx="'+i+'" onclick="removeModalSubtask(parseInt(this.dataset.idx))">×</button>'
-      +'</div>';
-  }).join('');
-}
-
-function removeModalSubtask(i) {
-  modalSubtasks.splice(i,1);
-  renderModalSubtasks();
-}
-
-function openTaskModalForBucket(bucket) {
-  openTaskModal();
-  setTimeout(()=>{ const el=document.getElementById('tm-bucket'); if(el) el.value=bucket; },50);
-}
-
-function openTaskModal(tid) {
-  editingTaskId = tid||null;
-  modalSubtasks = [];
-  selectedPriority = '';
-  document.getElementById('tm-title').textContent = tid ? 'Edit task' : 'New task';
-  document.getElementById('tm-title-input').value = '';
-  document.getElementById('tm-bucket').value = 'now';
-  document.getElementById('tm-notes').value = '';
-  ['red','yellow','blue'].forEach(c=>{ const b=document.getElementById('p-'+c); if(b) b.className='priority-btn'; });
-  const lbl = document.getElementById('priority-label'); if(lbl) lbl.textContent='None selected';
-
-  if(tid) {
-    const t = S.tasks.find(x=>x.id===tid);
-    if(t) {
-      document.getElementById('tm-title-input').value = t.title||'';
-      document.getElementById('tm-bucket').value = t.bucket||'now';
-      document.getElementById('tm-notes').value = t.notes||'';
-      modalSubtasks = [...(t.subtasks||[])];
-      if(t.priority) selectPriority(t.priority);
-    }
-  }
-  renderModalSubtasks();
-  openModal('task-modal');
-}
-
-function saveTask() {
-  const title = document.getElementById('tm-title-input').value.trim();
-  if(!title) return;
-  taskLoad();
-  const task = {
-    id: editingTaskId||('t'+Date.now()),
-    title,
-    bucket: document.getElementById('tm-bucket').value,
-    priority: selectedPriority,
-    notes: document.getElementById('tm-notes').value.trim(),
-    subtasks: modalSubtasks,
-    done: false,
-    createdAt: new Date().toISOString()
-  };
-  if(editingTaskId) {
-    const existing = S.tasks.find(t=>t.id===editingTaskId);
-    task.done = existing?.done||false;
-    task.doneAt = existing?.doneAt||null;
-    S.tasks = S.tasks.map(t=>t.id===editingTaskId?task:t);
-  } else {
-    S.tasks.push(task);
-  }
-  save(); closeModal('task-modal'); renderTasksPage();
-}
-
-
-// ══ NOTES ══
-let currentNoteId = null;
-let noteSaveTimer = null;
-
-function notesLoad() {
-  if(!S.notes) S.notes = [];
-  if(!S.ashley) S.ashley = {};
-}
-
-function renderNotes() {
-  notesLoad();
-  renderNotesList();
-  if(currentNoteId) {
-    const note = S.notes.find(n=>n.id===currentNoteId);
-    if(note) openNote(note.id);
-  }
-}
-
-function renderNotesList() {
-  notesLoad();
-  const search = (document.getElementById('notes-search')?.value||'').toLowerCase();
-  const list = document.getElementById('notes-list');
-  const empty = document.getElementById('notes-empty-sidebar');
-  if(!list) return;
-
-  const filtered = S.notes.filter(n=>
-    !search || n.title.toLowerCase().includes(search) || (n.bodyText||'').toLowerCase().includes(search)
-  ).sort((a,b)=>b.updatedAt.localeCompare(a.updatedAt));
-
-  if(!filtered.length) { list.innerHTML=''; empty.style.display='block'; return; }
-  empty.style.display='none';
-
-  list.innerHTML = filtered.map(n=>{
-    const isActive = n.id === currentNoteId;
-    const d = new Date(n.updatedAt);
-    const dateStr = d.toLocaleDateString('en-US',{month:'short',day:'numeric'});
-    const preview = (n.bodyText||'').slice(0,60)||'No content';
-    return '<div class="note-card'+(isActive?' active-note':'')+'" data-nid="'+n.id+'" onclick="openNote(this.dataset.nid)">'
-      +'<div style="font-size:13px;font-weight:600;color:var(--ink);margin-bottom:3px;">'+( n.title||'Untitled')+'</div>'
-      +'<div class="note-date">'+dateStr+'</div>'
-      +'<div class="note-preview">'+preview+'</div>'
-      +'</div>';
-  }).join('');
-}
-
-function newNote() {
-  notesLoad();
-  const note = {
-    id: 'n'+Date.now(),
-    title: '',
-    body: '',
-    bodyText: '',
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString()
-  };
-  S.notes.unshift(note);
-  save();
-  openNote(note.id);
-  renderNotesList();
-  setTimeout(()=>{ const el=document.getElementById('note-title'); if(el) el.focus(); },100);
-}
-
-function openNote(nid) {
-  notesLoad();
-  currentNoteId = nid;
-  const note = S.notes.find(n=>n.id===nid);
-  if(!note) return;
-
-  document.getElementById('notes-placeholder').style.display='none';
-  document.getElementById('notes-editor').style.display='block';
-  document.getElementById('note-title').value = note.title||'';
-  document.getElementById('note-body').innerHTML = note.body||'';
-  renderNotesList();
-}
-
-function saveCurrentNote() {
-  if(!currentNoteId) return;
-  const note = S.notes.find(n=>n.id===currentNoteId);
-  if(!note) return;
-  note.title = document.getElementById('note-title').value.trim();
-  const bodyEl = document.getElementById('note-body');
-  note.body = bodyEl.innerHTML;
-  note.bodyText = bodyEl.innerText||bodyEl.textContent||'';
-  note.updatedAt = new Date().toISOString();
-  // Debounced save
-  if(noteSaveTimer) clearTimeout(noteSaveTimer);
-  noteSaveTimer = setTimeout(()=>{ save(); renderNotesList(); }, 600);
-}
-
-function deleteCurrentNote() {
-  if(!currentNoteId) return;
-  const note = S.notes.find(n=>n.id===currentNoteId);
-  const title = note ? (note.title||'Untitled') : 'this note';
-  if(!window.confirm('Delete "'+title+'"?')) return;
-  S.notes = S.notes.filter(n=>n.id!==currentNoteId);
-  currentNoteId = null;
-  save();
-  const ph = document.getElementById('notes-placeholder');
-  const ed = document.getElementById('notes-editor');
-  if(ph) ph.style.display='block';
-  if(ed) ed.style.display='none';
-  renderNotesList();
-}
-
-function noteFormat(command, value) {
-  document.getElementById('note-body').focus();
-  document.execCommand(command, false, value||null);
-}
-
-
-
-function handleNoteKeydown(e) {
-  if(e.key === 'Tab') {
-    e.preventDefault();
-    if(e.shiftKey) {
-      document.execCommand('outdent', false, null);
-    } else {
-      document.execCommand('indent', false, null);
-    }
-    saveCurrentNote();
-    return;
-  }
-  if(e.key === 'Enter' && e.shiftKey) {
-    e.preventDefault();
-    document.execCommand('insertLineBreak', false, null);
-    saveCurrentNote();
-    return;
-  }
-  // Markdown shortcuts triggered on Space only
-  // Works by finding the current line's block element and replacing it
-  if(e.key === ' ') {
-    const sel = window.getSelection();
-    if(!sel || !sel.rangeCount) return;
-    const range = sel.getRangeAt(0);
-    // Walk up to find the block-level parent inside the editor
-    let node = range.startContainer;
-    while(node && node.id !== 'note-body') {
-      if(node.parentNode && node.parentNode.id === 'note-body') break;
-      node = node.parentNode;
-    }
-    if(!node || node.id === 'note-body') return;
-    const blockEl = node;
-    const text = blockEl.textContent;
-    let tag = null, strip = 0;
-    if(text === '#') { tag='h1'; strip=1; }
-    else if(text === '##') { tag='h2'; strip=2; }
-    else if(text === '###') { tag='h3'; strip=3; }
-    else if(text === '-' || text === '*') { tag='ul'; strip=1; }
-    else if(text === '1.') { tag='ol'; strip=2; }
-    else if(text === '>') { tag='blockquote'; strip=1; }
-    if(!tag) return;
-    e.preventDefault();
-    if(tag === 'ul' || tag === 'ol') {
-      // Replace block with list
-      const list = document.createElement(tag);
-      const li = document.createElement('li');
-      li.innerHTML = '<br>';
-      list.appendChild(li);
-      blockEl.parentNode.replaceChild(list, blockEl);
-      // Place cursor inside li
-      const newRange = document.createRange();
-      newRange.setStart(li, 0);
-      newRange.collapse(true);
-      sel.removeAllRanges();
-      sel.addRange(newRange);
-    } else {
-      // Replace block with heading or blockquote
-      const newEl = document.createElement(tag);
-      newEl.innerHTML = '<br>';
-      blockEl.parentNode.replaceChild(newEl, blockEl);
-      const newRange = document.createRange();
-      newRange.setStart(newEl, 0);
-      newRange.collapse(true);
-      sel.removeAllRanges();
-      sel.addRange(newRange);
-    }
-    saveCurrentNote();
-  }
-}
-
-// ── NOTES AI ──
-function noteAI(type) {
-  const note = currentNoteId ? S.notes.find(n=>n.id===currentNoteId) : null;
-  if(!note || !note.bodyText) { alert('Write something in the note first.'); return; }
-  const title = note.title || 'Untitled';
-  const body = note.bodyText;
-  const prompts = {
-    summarize: 'Summarize this note in 2-3 crisp sentences. Pull out the core idea and key points.\n\nNote title: '+title+'\n\nNote content:\n'+body,
-    clarify: 'This person is thinking through something. Help clarify their thinking: what is the core question or decision? What assumptions are they making? What are they missing? Be direct and specific.\n\nNote title: '+title+'\n\nNote content:\n'+body,
-    actions: 'Extract all action items, next steps, and commitments from this note. Format as a clear numbered list. If there are none, say so directly.\n\nNote title: '+title+'\n\nNote content:\n'+body,
-    expand: 'This person has a seed of an idea. Help them expand it: what are the implications? What related ideas connect to this? What would make this stronger or more useful? Give 3-4 specific, concrete directions to explore.\n\nNote title: '+title+'\n\nNote content:\n'+body
-  };
-  runNoteAI(prompts[type]);
-}
-
-function noteCustomAI() {
-  const q = document.getElementById('note-ai-input').value.trim();
-  if(!q) { alert('Type a question first.'); return; }
-  const note = currentNoteId ? S.notes.find(n=>n.id===currentNoteId) : null;
-  const context = note ? '\n\nNote title: '+(note.title||'Untitled')+'\n\nNote content:\n'+(note.bodyText||'(empty)') : '';
-  runNoteAI('Parker Nelson asked: '+q+context+'\n\nAnswer directly and specifically. Be concise.');
-}
 
 async function runNoteAI(prompt) {
   const panel = document.getElementById('note-ai-panel');
@@ -3365,6 +2992,117 @@ function clearDealStress() {
   const ai = document.getElementById('deal-stress-ai');
   if(ai) ai.style.display = 'none';
 }
+
+
+// ══ TASKS (GTD) ══
+let editingTaskId = null;
+let modalSubtasks = [];
+let selectedPriority = '';
+let taskFilter = 'all';
+let expandedTasks = new Set();
+let collapsedBuckets = new Set();
+
+const BUCKETS = [
+  {id:'now',    label:'Now',         emoji:'🔥', color:'#dc2626',  desc:'This week'},
+  {id:'next',   label:'Next',        emoji:'→',  color:'#2563eb',  desc:'Do soon'},
+  {id:'later',  label:'Later',       emoji:'○',  color:'#6b7280',  desc:'Someday'},
+  {id:'parking',label:'Parking Lot', emoji:'🅿', color:'#374151',  desc:'Not now'}
+];
+
+function taskLoad() { if(!S.tasks) S.tasks = []; }
+function setTaskFilter(filter, el) { taskFilter=filter; document.querySelectorAll('.filter-chip').forEach(c=>c.classList.remove('active')); el.classList.add('active'); renderTasksPage(); }
+function toggleBucket(id) { if(collapsedBuckets.has(id)) collapsedBuckets.delete(id); else collapsedBuckets.add(id); renderTasksPage(); }
+function toggleTaskExpand(tid) { if(expandedTasks.has(tid)) expandedTasks.delete(tid); else expandedTasks.add(tid); renderTasksPage(); }
+
+function renderTasksPage() {
+  taskLoad();
+  const empty = document.getElementById('tasks-empty');
+  const filtered = getFilteredTasks();
+  if(!S.tasks.length) { BUCKETS.forEach(b=>{const el=document.getElementById('tasks-'+b.id);if(el)el.innerHTML='';}); if(empty)empty.style.display='block'; return; }
+  if(empty)empty.style.display='none';
+  BUCKETS.forEach(bucket => {
+    const wrap = document.getElementById('tasks-'+bucket.id);
+    if(!wrap) return;
+    const tasks = filtered.filter(t=>t.bucket===bucket.id);
+    const isCollapsed = collapsedBuckets.has(bucket.id);
+    if(!tasks.length && taskFilter!=='all') { wrap.innerHTML=''; return; }
+    let html = '<div class="bucket-section">'
+      +'<div class="bucket-header" data-bid="'+bucket.id+'" onclick="toggleBucket(this.dataset.bid)">'
+      +'<span class="bucket-chevron'+(isCollapsed?'':' open')+'">›</span>'
+      +'<div class="bucket-dot" style="background:'+bucket.color+'"></div>'
+      +'<div class="bucket-title">'+bucket.emoji+' '+bucket.label+'</div>'
+      +'<div class="bucket-count">'+tasks.length+' task'+(tasks.length!==1?'s':'')+'</div>'
+      +'</div>';
+    if(!isCollapsed) {
+      html += '<div class="task-list">';
+      tasks.forEach(t => { html += buildTaskRow(t); });
+      html += '<div class="add-task-inline" data-bid="'+bucket.id+'" onclick="openTaskModalForBucket(this.dataset.bid)"><span style="font-size:16px;margin-right:2px;">+</span> Add task</div>';
+      html += '</div>';
+    }
+    html += '</div>';
+    wrap.innerHTML = html;
+  });
+}
+
+function getFilteredTasks() {
+  taskLoad();
+  return S.tasks.filter(t => {
+    if(taskFilter==='done') return t.done;
+    if(taskFilter==='red') return t.priority==='red'&&!t.done;
+    if(taskFilter==='yellow') return t.priority==='yellow'&&!t.done;
+    if(taskFilter==='blue') return t.priority==='blue'&&!t.done;
+    return !t.done;
+  });
+}
+
+function buildTaskRow(t) {
+  const subtasks = t.subtasks||[];
+  const subDone = subtasks.filter(s=>s.done).length;
+  const isExpanded = expandedTasks.has(t.id);
+  const checkClass = (t.done?'checked ':'')+('priority-'+( t.priority||''));
+  const priorityDot = '';
+  let html = '<div class="task-row'+(t.done?' done-task':'')+'">'
+    +'<div class="task-check '+checkClass+'" onclick="toggleTask(this)" data-tid="'+t.id+'">'+(t.done?'✓':'')+'</div>'
+    +'<div class="task-body">'
+    +'<div class="task-title">'+t.title+'</div>'
+    +'<div class="task-meta">';
+  if(t.notes) html += '<span class="task-notes-preview">'+t.notes.slice(0,60)+(t.notes.length>60?'...':'')+'</span>';
+  if(subtasks.length) {
+    html += '<span class="task-subtask-count">'+subDone+'/'+subtasks.length+' subtasks</span>';
+    html += '<button class="task-expand-btn" data-tid="'+t.id+'" onclick="toggleTaskExpand(this.dataset.tid)">'+(isExpanded?'▲ hide':'▼ show')+'</button>';
+  }
+  html += '</div></div>';
+  const bucketOptions = BUCKETS.map(b=>'<option value="'+b.id+'"'+(b.id===t.bucket?' selected':'')+'>'+b.emoji+' '+b.label+'</option>').join('');
+  html += '<div class="task-row-actions">'
+    +'<select class="input" style="font-size:11px;padding:3px 5px;width:100px;" data-tid="'+t.id+'" onchange="moveTask(this.dataset.tid,this.value)">'+bucketOptions+'</select>'
+    +'<button class="btn sm" data-tid="'+t.id+'" onclick="openTaskModal(this.dataset.tid)">Edit</button>'
+    +'<button class="btn sm danger" data-tid="'+t.id+'" onclick="deleteTask(this.dataset.tid)">×</button>'
+    +'</div></div>';
+  if(isExpanded && subtasks.length) {
+    html += '<div class="subtask-list">';
+    subtasks.forEach((s,i)=>{
+      const subNotes = s.notes ? '<div style="font-size:11px;color:var(--ink3);font-style:italic;margin-top:2px;">'+s.notes+'</div>' : '';
+      html += '<div class="subtask-row'+(s.done?' sub-done':'')+'">'
+        +'<div class="subtask-check'+(s.done?' checked':'')+'" data-tid="'+t.id+'" data-idx="'+i+'" onclick="toggleSubtask(this)">'+(s.done?'✓':'')+'</div>'
+        +'<div><div class="subtask-text">'+s.text+'</div>'+subNotes+'</div>'
+        +'</div>';
+    });
+    html += '</div>';
+  }
+  return html;
+}
+
+function toggleTask(el) { const tid=el.dataset.tid; const t=S.tasks.find(x=>x.id===tid); if(!t) return; t.done=!t.done; t.doneAt=t.done?new Date().toISOString():null; save(); renderTasksPage(); }
+function toggleSubtask(el) { const tid=el.dataset.tid; const idx=parseInt(el.dataset.idx); const t=S.tasks.find(x=>x.id===tid); if(!t||!t.subtasks) return; t.subtasks[idx].done=!t.subtasks[idx].done; save(); renderTasksPage(); }
+function moveTask(tid,bucket) { const t=S.tasks.find(x=>x.id===tid); if(!t) return; t.bucket=bucket; save(); renderTasksPage(); }
+function deleteTask(tid) { const t=S.tasks.find(x=>x.id===tid); if(!window.confirm('Delete "'+( t?t.title:'this task')+'"?')) return; S.tasks=S.tasks.filter(x=>x.id!==tid); save(); renderTasksPage(); }
+function selectPriority(p) { selectedPriority=selectedPriority===p?'':p; ['red','yellow','blue'].forEach(c=>{const btn=document.getElementById('p-'+c); if(btn) btn.className='priority-btn'+(selectedPriority===c?' sel-'+c:'');}); const label=document.getElementById('priority-label'); if(label) label.textContent=selectedPriority?{red:'🔴 Urgent',yellow:'🟡 Important',blue:'🔵 Someday'}[selectedPriority]:'None selected'; }
+function addModalSubtask() { const inp=document.getElementById('tm-subtask-input'); const notesInp=document.getElementById('tm-subtask-notes'); const t=inp.value.trim(); if(!t) return; modalSubtasks.push({text:t,notes:(notesInp?.value.trim()||''),done:false}); inp.value=''; if(notesInp) notesInp.value=''; renderModalSubtasks(); }
+function renderModalSubtasks() { const list=document.getElementById('tm-subtasks-list'); if(!list) return; list.innerHTML=modalSubtasks.map((s,i)=>{const notesHtml=s.notes?'<div style="font-size:11px;color:var(--ink3);font-style:italic;">'+s.notes+'</div>':''; return '<div style="display:flex;align-items:flex-start;gap:8px;padding:8px 0;border-bottom:1px solid var(--border);">'+'<div style="flex:1;"><div style="font-size:13px;">'+s.text+'</div>'+notesHtml+'</div>'+'<button class="btn sm danger" data-idx="'+i+'" onclick="removeModalSubtask(parseInt(this.dataset.idx))">×</button>'+'</div>';}).join(''); }
+function removeModalSubtask(i) { modalSubtasks.splice(i,1); renderModalSubtasks(); }
+function openTaskModalForBucket(bucket) { openTaskModal(); setTimeout(()=>{const el=document.getElementById('tm-bucket'); if(el) el.value=bucket;},50); }
+function openTaskModal(tid) { editingTaskId=tid||null; modalSubtasks=[]; selectedPriority=''; document.getElementById('tm-title').textContent=tid?'Edit task':'New task'; document.getElementById('tm-title-input').value=''; document.getElementById('tm-bucket').value='now'; document.getElementById('tm-notes').value=''; ['red','yellow','blue'].forEach(c=>{const b=document.getElementById('p-'+c); if(b) b.className='priority-btn';}); const lbl=document.getElementById('priority-label'); if(lbl) lbl.textContent='None selected'; if(tid){const t=S.tasks.find(x=>x.id===tid); if(t){document.getElementById('tm-title-input').value=t.title||''; document.getElementById('tm-bucket').value=t.bucket||'now'; document.getElementById('tm-notes').value=t.notes||''; modalSubtasks=[...(t.subtasks||[])]; if(t.priority) selectPriority(t.priority);}} renderModalSubtasks(); openModal('task-modal'); }
+function saveTask() { const title=document.getElementById('tm-title-input').value.trim(); if(!title) return; taskLoad(); const task={id:editingTaskId||('t'+Date.now()),title,bucket:document.getElementById('tm-bucket').value,priority:selectedPriority,notes:document.getElementById('tm-notes').value.trim(),subtasks:modalSubtasks,done:false,createdAt:new Date().toISOString()}; if(editingTaskId){const existing=S.tasks.find(t=>t.id===editingTaskId); task.done=existing?.done||false; task.doneAt=existing?.doneAt||null; S.tasks=S.tasks.map(t=>t.id===editingTaskId?task:t);}else{S.tasks.push(task);} save(); closeModal('task-modal'); renderTasksPage(); }
 
 // ══ ASHLEY ══
 const ASHLEY_CATEGORIES = [
@@ -3458,7 +3196,7 @@ function ashleyAI(type) {
   const dates = S.ashley.dates.filter(x=>!x.done).map(x=>x.text).join(', ') || 'none saved';
   const likes = S.ashley.likes.filter(x=>!x.done).map(x=>x.text).join(', ') || 'none saved';
   const memories = S.ashley.memories.slice(0,5).map(x=>x.text).join(', ') || 'none saved';
-  const context = 'Parker Nelson is a Christian man in Frisco TX, enterprise AE at Workday, intentional husband. His wife is Ashley.\nDate ideas already saved: '+dates+'.\nThings Ashley loves: '+likes+'.\nRecent memories: '+memories+'.';
+  const context = 'Parker Nelson is a Christian man in Frisco TX, enterprise AE at Workday, intentional father to his daughter. He is dating Ashley.\nDate ideas already saved: '+dates+'.\nThings Ashley loves: '+likes+'.\nRecent memories: '+memories+'.';
   const prompts = {
     date: context+'\n\nSuggest 3 specific, creative date night ideas for Parker and Ashley in the DFW/Frisco area. Consider their faith, his busy schedule, and making her feel special. Be specific — name actual places or activities.',
     gift: context+'\n\nSuggest 5 thoughtful gift ideas for Ashley based on what she loves. Mix practical and sentimental. Include a price range for each. Be specific.',
@@ -3473,7 +3211,7 @@ function ashleyCustomAI() {
   ashleyLoad();
   const dates = S.ashley.dates.filter(x=>!x.done).map(x=>x.text).join(', ') || 'none';
   const likes = S.ashley.likes.filter(x=>!x.done).map(x=>x.text).join(', ') || 'none';
-  const prompt = 'Parker Nelson, Christian husband in Frisco TX. Wife: Ashley. Date ideas saved: '+dates+'. Things she loves: '+likes+'.\n\nQuestion: '+q+'\n\nAnswer helpfully and specifically.';
+  const prompt = 'Parker Nelson, Christian man in Frisco TX. Dating Ashley. Date ideas saved: '+dates+'. Things she loves: '+likes+'.\n\nQuestion: '+q+'\n\nAnswer helpfully and specifically.';
   runAshleyAI(prompt);
 }
 
