@@ -638,11 +638,29 @@ select.input{cursor:pointer;}
         <div class="prompt-q" id="reflect-q">—</div>
         <div class="prompt-src" id="reflect-src">—</div>
       </div>
-      <textarea class="input" id="daily-reflect-text" placeholder="Write your reflection here..." style="width:100%;"></textarea>
+      <!-- Reflection rich editor -->
+      <div class="note-toolbar" style="margin-bottom:8px;">
+        <button class="note-tool-btn" onclick="reflectFormat('bold')"><b>B</b></button>
+        <button class="note-tool-btn" onclick="reflectFormat('italic')"><i>I</i></button>
+        <button class="note-tool-btn" onclick="reflectFormat('underline')"><u>U</u></button>
+        <div style="width:1px;background:var(--border);margin:0 4px;"></div>
+        <button class="note-tool-btn" onclick="reflectFormat('formatBlock','h3')">H3</button>
+        <button class="note-tool-btn" onclick="reflectFormat('formatBlock','p')">¶</button>
+        <div style="width:1px;background:var(--border);margin:0 4px;"></div>
+        <button class="note-tool-btn" onclick="reflectFormat('insertUnorderedList')">• List</button>
+        <button class="note-tool-btn" onclick="reflectFormat('insertOrderedList')">1. List</button>
+        <button class="note-tool-btn" onclick="reflectFormat('indent')">→</button>
+        <button class="note-tool-btn" onclick="reflectFormat('outdent')">←</button>
+      </div>
+      <div id="daily-reflect-editor" class="note-editor" contenteditable="true"
+        oninput="onReflectInput()"
+        onkeydown="handleReflectKeydown(event)"
+        style="min-height:120px;padding:10px 12px;background:var(--surface);border:1px solid var(--border);border-radius:8px;outline:none;font-size:14px;line-height:1.7;">
+      </div>
       <div style="display:flex;gap:8px;align-items:center;margin-top:10px;flex-wrap:wrap;">
         <button class="btn primary" onclick="saveReflection()">Save reflection ✓</button>
         <button class="btn gold" onclick="coachAI('daily')">Get coaching insight ↗</button>
-        <span id="reflect-saved" style="font-size:11px;color:var(--green);opacity:0;transition:opacity 0.3s;font-family:'DM Mono',monospace;">saved</span>
+        <span id="reflect-saved" style="font-size:11px;color:var(--green);opacity:0;transition:opacity 0.3s;font-family:'DM Mono',monospace;">✓ Saved</span>
       </div>
       <div id="daily-coach-ai" style="display:none;margin-top:12px;" class="ai-panel">
         <div class="ai-header"><div class="ai-dot"></div><div class="ai-label">Claude coaching</div></div>
@@ -1253,9 +1271,23 @@ select.input{cursor:pointer;}
         <select class="input" id="gm-domain"></select>
       </div>
       <div class="form-row">
-        <label class="form-label">Target date</label>
-        <input class="input" type="date" id="gm-date"/>
+        <label class="form-label">Goal type</label>
+        <select class="input" id="gm-type" onchange="toggleGoalDateField()">
+          <option value="dated">📅 Time-bound — has a target date</option>
+          <option value="ongoing">♾️ Ongoing — habitual or continuous</option>
+        </select>
       </div>
+    </div>
+    <div class="form-row" id="gm-date-row">
+      <label class="form-label">Target date</label>
+      <input class="input" type="date" id="gm-date"/>
+    </div>
+    <div class="form-row" id="gm-ongoing-row" style="display:none;">
+      <label class="form-label">Linked habit <span style="font-weight:300;color:var(--ink3)">(optional)</span></label>
+      <select class="input" id="gm-linked-habit">
+        <option value="">— None —</option>
+      </select>
+      <div class="form-hint">Ongoing goals can be powered by a daily habit — progress tracks automatically</div>
     </div>
 
     <div class="modal-section">SMARTER breakdown</div>
@@ -1612,11 +1644,10 @@ function renderToday() {
   const p = DAILY_PROMPTS[promptIdx % DAILY_PROMPTS.length];
   setEl('reflect-q', p.q);
   setEl('reflect-src', p.src);
-  const rta=document.getElementById('daily-reflect-text'); if(rta) rta.value=S.dailyReflect[today]||'';
-  document.getElementById('daily-reflect-text').oninput = function() {
-    S.dailyReflect[today]=this.value; save();
-    const s=document.getElementById('reflect-saved'); s.style.opacity='1'; setTimeout(()=>s.style.opacity='0',2000);
-  };
+  const reflectEl = document.getElementById('daily-reflect-editor');
+  if(reflectEl) {
+    reflectEl.innerHTML = S.dailyReflect[today]||'';
+  }
 }
 
 function big3Streak() {
@@ -1656,14 +1687,74 @@ function clearDayPlanner() {
   if(ai) ai.style.display = 'none';
 }
 
+
+// ══ DAILY REFLECTION RICH EDITOR ══
+function reflectFormat(command, value) {
+  document.getElementById('daily-reflect-editor').focus();
+  document.execCommand(command, false, value||null);
+}
+
+function onReflectInput() {
+  const today = todayKey();
+  const el = document.getElementById('daily-reflect-editor');
+  if(!el) return;
+  S.dailyReflect[today] = el.innerHTML;
+  save();
+}
+
+function handleReflectKeydown(e) {
+  if(e.key==='Tab') {
+    e.preventDefault();
+    if(e.shiftKey) document.execCommand('outdent',false,null);
+    else document.execCommand('indent',false,null);
+    onReflectInput();
+    return;
+  }
+  if(e.key==='Enter'&&e.shiftKey) {
+    e.preventDefault();
+    document.execCommand('insertLineBreak',false,null);
+    onReflectInput();
+    return;
+  }
+  if(e.key===' ') {
+    const sel=window.getSelection(); if(!sel||!sel.rangeCount) return;
+    const range=sel.getRangeAt(0);
+    let node=range.startContainer;
+    while(node&&node.id!=='daily-reflect-editor') {
+      if(node.parentNode&&node.parentNode.id==='daily-reflect-editor') break;
+      node=node.parentNode;
+    }
+    if(!node||node.id==='daily-reflect-editor') return;
+    const blockEl=node; const text=blockEl.textContent;
+    let tag=null;
+    if(text==='#'){tag='h1';}else if(text==='##'){tag='h2';}else if(text==='###'){tag='h3';}
+    else if(text==='-'||text==='*'){tag='ul';}else if(text==='1.'){tag='ol';}else if(text==='>'){tag='blockquote';}
+    if(!tag) return;
+    e.preventDefault();
+    if(tag==='ul'||tag==='ol') {
+      const list=document.createElement(tag); const li=document.createElement('li');
+      li.innerHTML='<br>'; list.appendChild(li);
+      blockEl.parentNode.replaceChild(list,blockEl);
+      const nr=document.createRange(); nr.setStart(li,0); nr.collapse(true);
+      sel.removeAllRanges(); sel.addRange(nr);
+    } else {
+      const newEl=document.createElement(tag); newEl.innerHTML='<br>';
+      blockEl.parentNode.replaceChild(newEl,blockEl);
+      const nr=document.createRange(); nr.setStart(newEl,0); nr.collapse(true);
+      sel.removeAllRanges(); sel.addRange(nr);
+    }
+    onReflectInput();
+  }
+}
+
 function saveReflection() {
   const today = todayKey();
-  const text = document.getElementById('daily-reflect-text').value.trim();
-  if(!text) { alert('Write something first!'); return; }
-  S.dailyReflect[today] = text;
+  const el = document.getElementById('daily-reflect-editor');
+  if(!el||!el.innerText.trim()) { alert('Write something first!'); return; }
+  S.dailyReflect[today] = el.innerHTML;
   save();
   const s = document.getElementById('reflect-saved');
-  if(s) { s.textContent = '✓ Saved'; s.style.opacity='1'; setTimeout(()=>s.style.opacity='0', 2500); }
+  if(s) { s.textContent = '✓ Saved'; s.style.opacity='1'; setTimeout(()=>{ s.textContent='✓ Saved'; s.style.opacity='0'; }, 2500); }
 }
 
 function longestStreak() {
@@ -1685,8 +1776,8 @@ function nextPrompt() {
   setEl('reflect-q', p.q);
   setEl('reflect-src', p.src);
   // Clear the textarea and coaching panel for fresh start
-  const ta = document.getElementById('daily-reflect-text');
-  if(ta) ta.value = '';
+  const reflectEditor = document.getElementById('daily-reflect-editor');
+  if(reflectEditor) reflectEditor.innerHTML = '';
   const coach = document.getElementById('daily-coach-ai');
   if(coach) coach.style.display = 'none';
   const saved = document.getElementById('reflect-saved');
@@ -2008,10 +2099,11 @@ function renderGoalsPage() {
 }
 
 function buildGoalCard(g, dom) {
-  const pct=g.progress||0;
+  const isOngoing = g.goalType === 'ongoing';
+  const pct = isOngoing && g.linkedHabit ? getOngoingGoalProgress(g) : (g.progress||0);
   const milestones=S.milestones[g.id]||[];
   const msDone=milestones.filter(m=>m.done).length;
-  const daysLeft=g.date?Math.ceil((new Date(g.date)-new Date())/86400000):null;
+  const daysLeft=g.date&&!isOngoing?Math.ceil((new Date(g.date)-new Date())/86400000):null;
   const card=document.createElement('div');
   card.className='goal-card';
   card.style.setProperty('--domain-color',dom.color);
@@ -2050,13 +2142,20 @@ function buildGoalCard(g, dom) {
     </div>
     <div class="goal-badges">
       <div class="badge domain" style="background:${dom.color};">${dom.name}</div>
-      ${g.date?'<div class="badge">'+ new Date(g.date).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})+'</div>':''}
+      ${(g.goalType||'dated')==='ongoing'
+        ? '<div class="badge" style="background:var(--gold-lt);border-color:var(--gold-md);color:var(--gold);">♾️ Ongoing</div>'
+        : (g.date?'<div class="badge">'+ new Date(g.date).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})+'</div>':'')
+      }
+      ${g.linkedHabit ? '<div class="badge" style="color:var(--green);border-color:var(--green);">↳ '+( S.habits.find(h=>h.id===g.linkedHabit)?.name||'Habit')+'</div>' : ''}
       ${milestones.length?'<div class="badge">'+msDone+'/'+milestones.length+' milestones</div>':''}
     </div>
     <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
     <div class="progress-row">
       <span>${pct}% complete</span>
-      <input type="range" min="0" max="100" value="${pct}" step="1" style="width:140px;accent-color:${dom.color};" oninput="updateGoalProgress('${g.id}',this.value,this.closest('.goal-card').querySelector('.progress-fill'),this.closest('.goal-card').querySelector('.progress-row span'))"/>
+      ${isOngoing && g.linkedHabit
+        ? ('<span style="font-size:11px;color:var(--ink3);">'+habitWeekProgress(g.linkedHabit)+'/'+getHabitFrequency(S.habits.find(h=>h.id===g.linkedHabit)||{frequency:7})+' this week · auto-tracked</span>')
+        : ('<input type="range" min="0" max="100" value="'+pct+'" step="1" style="width:140px;accent-color:'+dom.color+';" data-gid="'+g.id+'" oninput="updateGoalProgressFromSlider(this)"/>')
+      }
     </div>
     ${smarterHTML}
     ${msHTML}
@@ -2068,6 +2167,16 @@ function buildGoalCard(g, dom) {
   return card;
 }
 
+
+function updateGoalProgressFromSlider(el) {
+  const gid = el.dataset.gid;
+  const val = el.value;
+  const card = el.closest('.goal-card');
+  const fillEl = card ? card.querySelector('.progress-fill') : null;
+  const labelEl = card ? card.querySelector('.progress-row span') : null;
+  updateGoalProgress(gid, val, fillEl, labelEl);
+}
+
 function updateGoalProgress(gid, val, fillEl, labelEl) {
   const g=S.goals.find(x=>x.id===gid);
   if(!g) return;
@@ -2075,6 +2184,15 @@ function updateGoalProgress(gid, val, fillEl, labelEl) {
   if(fillEl) fillEl.style.width=val+'%';
   if(labelEl) labelEl.textContent=val+'% complete';
   save();
+}
+
+function getOngoingGoalProgress(g) {
+  if(g.goalType!=='ongoing' || !g.linkedHabit) return g.progress||0;
+  const h = S.habits.find(x=>x.id===g.linkedHabit);
+  if(!h) return 0;
+  const freq = parseInt(h.frequency||7);
+  const done = habitWeekProgress(g.linkedHabit);
+  return Math.min(100, Math.round(done/freq*100));
 }
 
 function toggleMilestone(gid, idx) {
@@ -2098,17 +2216,37 @@ function deleteGoal(gid) {
   save(); renderGoalsPage();
 }
 
+
+function toggleGoalDateField() {
+  const type = document.getElementById('gm-type').value;
+  const dateRow = document.getElementById('gm-date-row');
+  const ongoingRow = document.getElementById('gm-ongoing-row');
+  if(dateRow) dateRow.style.display = type==='dated' ? 'block' : 'none';
+  if(ongoingRow) ongoingRow.style.display = type==='ongoing' ? 'block' : 'none';
+}
+
+function populateLinkedHabitSelect() {
+  const sel = document.getElementById('gm-linked-habit');
+  if(!sel) return;
+  sel.innerHTML = '<option value="">— None —</option>'
+    + S.habits.map(h=>'<option value="'+h.id+'">'+h.name+'</option>').join('');
+}
+
 // ══ GOAL MODAL ══
 function openGoalModal(gid) {
   editingGoalId=gid||null;
   modalMilestones=[];
   populateDomainSelect('gm-domain');
+  populateLinkedHabitSelect();
   document.getElementById('gm-title').textContent=gid?'Edit goal':'New SMARTER goal';
   if(gid){
     const g=S.goals.find(x=>x.id===gid);
     document.getElementById('gm-title-input').value=g.title||'';
     document.getElementById('gm-domain').value=g.domain||'spiritual';
+    document.getElementById('gm-type').value=g.goalType||'dated';
     document.getElementById('gm-date').value=g.date||'';
+    document.getElementById('gm-linked-habit').value=g.linkedHabit||'';
+    toggleGoalDateField();
     document.getElementById('gm-specific').value=g.specific||'';
     document.getElementById('gm-measurable').value=g.measurable||'';
     document.getElementById('gm-actionable').value=g.actionable||'';
@@ -2123,8 +2261,11 @@ function openGoalModal(gid) {
     ['gm-title-input','gm-specific','gm-measurable','gm-actionable','gm-risky','gm-timekeyed','gm-exciting','gm-relevant'].forEach(id=>document.getElementById(id).value='');
     document.getElementById('gm-date').value='';
     document.getElementById('gm-domain').value='spiritual';
+    document.getElementById('gm-type').value='dated';
+    document.getElementById('gm-linked-habit').value='';
     document.getElementById('gm-progress').value=0;
     document.getElementById('gm-pct-label').textContent='0%';
+    toggleGoalDateField();
   }
   renderModalMilestones();
   openModal('goal-modal');
@@ -2156,10 +2297,13 @@ function removeModalMilestone(i) {
 function saveGoal() {
   const title=document.getElementById('gm-title-input').value.trim();
   if(!title) return;
+  const goalType = document.getElementById('gm-type').value;
   const goal={
     id:editingGoalId||('g'+Date.now()),
     title, domain:document.getElementById('gm-domain').value,
-    date:document.getElementById('gm-date').value,
+    goalType: goalType,
+    date: goalType==='dated' ? document.getElementById('gm-date').value : '',
+    linkedHabit: goalType==='ongoing' ? document.getElementById('gm-linked-habit').value : '',
     specific:document.getElementById('gm-specific').value.trim(),
     measurable:document.getElementById('gm-measurable').value.trim(),
     actionable:document.getElementById('gm-actionable').value.trim(),
@@ -2545,7 +2689,8 @@ async function coachAI(type) {
   let prompt='';
   if(type==='daily'){
     const p=DAILY_PROMPTS[promptIdx%DAILY_PROMPTS.length];
-    const reflect=S.dailyReflect[today]||'';
+    const reflectEl=document.getElementById('daily-reflect-editor');
+    const reflect=(reflectEl?reflectEl.innerText:S.dailyReflect[today])||'';
     const b3=S.dailyBig3[today].map((x,i)=>`${i+1}. ${x.t||'blank'} [${x.done?'done':'not done'}]`).join(', ');
     prompt=`You are a life coach for Parker Nelson — Christian, enterprise AE at Workday in Frisco TX, dad, building intentionally from survival to purpose. He uses Michael Hyatt's Full Focus framework.\n\nToday: ${hDone}/${hTotal} habits done (${pct}%). Big 3: ${b3}.\nGoals: ${goalsSummary||'none yet'}.\nReflection prompt: "${p.q}"\nHis reflection: "${reflect||'(not written)'}"\n\nWrite a 2–3 sentence coaching insight grounded in faith and the Hyatt framework. Be direct, warm. End with one sharp action for today.`;
   } else if(type==='review') {
