@@ -1444,6 +1444,51 @@ function getAPIHeaders() {
   };
 }
 
+
+async function testAPIKey() {
+  const inputKey = document.getElementById('api-key-input').value.trim();
+  const key = inputKey || localStorage.getItem('lifeos_apikey') || '';
+  const resultEl = document.getElementById('api-test-result');
+  if(!resultEl) return;
+  if(!key) {
+    resultEl.style.display='block';
+    resultEl.style.background='var(--red-lt)';
+    resultEl.textContent='No key found. Paste your key above first.';
+    return;
+  }
+  resultEl.style.display='block';
+  resultEl.style.background='var(--surface)';
+  resultEl.textContent='Testing key: '+key.slice(0,25)+'...';
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method:'POST',
+      headers:{
+        'Content-Type':'application/json',
+        'x-api-key': key,
+        'anthropic-version':'2023-06-01',
+        'anthropic-dangerous-direct-browser-access':'true'
+      },
+      body: JSON.stringify({model:'claude-sonnet-4-5',max_tokens:10,messages:[{role:'user',content:'Hi'}]})
+    });
+    const data = await res.json();
+    if(res.status === 200) {
+      resultEl.style.background='var(--green-lt)';
+      resultEl.style.color='var(--green)';
+      resultEl.textContent='✓ Key works! Status 200. Saving now...';
+      localStorage.setItem('lifeos_apikey', key);
+      saveAPIKeyToFirebase(key);
+    } else {
+      resultEl.style.background='var(--red-lt)';
+      resultEl.style.color='var(--red)';
+      resultEl.textContent='✗ Error '+res.status+': '+(data.error?.message||JSON.stringify(data));
+    }
+  } catch(e) {
+    resultEl.style.background='var(--red-lt)';
+    resultEl.style.color='var(--red)';
+    resultEl.textContent='Network error: '+e.message;
+  }
+}
+
 function saveAPIKey() {
   const key = document.getElementById('api-key-input').value.trim();
   if(!key.startsWith('sk-ant-')) { alert('That does not look like a valid Anthropic API key.'); return; }
