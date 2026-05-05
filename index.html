@@ -485,11 +485,15 @@ select.input{cursor:pointer;}
     <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;">
       <div style="display:flex;gap:6px;">
         <button class="btn sm" onclick="document.getElementById('api-key-modal').classList.add('open')" title="Set your Anthropic API key">API key</button>
+        <button class="btn sm" onclick="syncNow()" title="Force sync to Firebase" id="sync-btn">Sync</button>
         <button class="btn sm" onclick="exportData()" title="Download your data as a backup file">Export data</button>
         <button class="btn sm" onclick="document.getElementById('import-input').click()" title="Restore from a backup file">Import</button>
         <input type="file" id="import-input" accept=".json" style="display:none;" onchange="importData(event)"/>
       </div>
-      <div class="app-date" id="hdr-date">—</div>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <span id="firebase-status" style="font-size:10px;font-family:'DM Mono',monospace;transition:color 0.3s;"></span>
+        <div class="app-date" id="hdr-date">—</div>
+      </div>
       <div style="text-align:right;font-family:'DM Sans',sans-serif;font-size:22px;color:var(--gold);line-height:1;" id="hdr-score">—</div>
     </div>
   </div>
@@ -3972,26 +3976,100 @@ function mobileNav(pageId, el) {
   // Check API key
   checkAPIKey();
   
-  // Init Firebase in background
+  // Init Firebase
   await initFirebase();
   
-  // Load from localStorage (full load with all defaults)
-  await load();
-  fitLoad();
-  devLoad();
-  renderToday();
-  
-  // Then try to get fresher data from Firebase
+  // Try Firebase first - it has the most complete data
   if(fbInitialized) {
+    setFirebaseStatus('syncing');
     const gotFirebase = await loadFromFirebase();
     if(gotFirebase) {
-      await load(); // re-init defaults on top of Firebase data
+      // Firebase loaded - apply defaults for any missing keys, then render
+      initDefaults();
+      fitLoad();
+      devLoad();
+      renderToday();
+      setFirebaseStatus('synced');
+    } else {
+      // Firebase empty or failed - use localStorage
+      setFirebaseStatus('local');
       fitLoad();
       devLoad();
       renderToday();
     }
+  } else {
+    setFirebaseStatus('offline');
+    fitLoad();
+    devLoad();
+    renderToday();
   }
 })();
+
+
+async function syncNow() {
+  const btn = document.getElementById('sync-btn');
+  if(btn) btn.textContent = 'Syncing...';
+  setFirebaseStatus('syncing');
+  if(!fbInitialized) await initFirebase();
+  if(fbInitialized) {
+    try {
+      await window._fbDb.doc(USER_PATH).set({data: JSON.stringify(S)}, {merge: true});
+      setFirebaseStatus('synced');
+      if(btn) btn.textContent = 'Sync';
+    } catch(e) {
+      setFirebaseStatus('offline');
+      if(btn) btn.textContent = 'Sync';
+      alert('Sync failed: '+e.message);
+    }
+  } else {
+    setFirebaseStatus('offline');
+    if(btn) btn.textContent = 'Sync';
+    alert('Firebase not connected. Check your internet connection.');
+  }
+}
+
+function setFirebaseStatus(status) {
+  const el = document.getElementById('firebase-status');
+  if(!el) return;
+  const map = {
+    syncing: {text:'↻ Syncing...', color:'var(--ink4)'},
+    synced:  {text:'✓ Synced', color:'var(--green)'},
+    local:   {text:'⚠ Local only', color:'var(--gold)'},
+    offline: {text:'⚡ Offline', color:'var(--red)'}
+  };
+  const s = map[status]||map.local;
+  el.textContent = s.text;
+  el.style.color = s.color;
+  if(status==='synced') setTimeout(()=>{el.textContent='';}, 3000);
+}
+
+function initDefaults() {
+  if(!S.habits) S.habits=[];
+  if(!S.goals) S.goals=[];
+  if(!S.dailyBig3) S.dailyBig3={};
+  if(!S.weeklyBig3) S.weeklyBig3={};
+  if(!S.habitLog) S.habitLog={};
+  if(!S.brainDump) S.brainDump={};
+  if(!S.dailyReflect) S.dailyReflect={};
+  if(!S.dailyReview) S.dailyReview={};
+  if(!S.weeklyReview) S.weeklyReview={};
+  if(!S.weeklyPreview) S.weeklyPreview={};
+  if(!S.promptIdx) S.promptIdx={};
+  if(!S.milestones) S.milestones={};
+  if(!S.dayPlan) S.dayPlan={};
+  if(!S.tasks) S.tasks=[];
+  if(!S.notes) S.notes=[];
+  if(!S.ashley) S.ashley={};
+  if(!S.macros) S.macros={};
+  if(!S.workouts) S.workouts=[];
+  if(!S.macroTargets) S.macroTargets={cal:2800,protein:220,carbs:280,fat:80,water:128};
+  if(!S.devotionals) S.devotionals={};
+  const _today=todayKey(), _wk=weekKey();
+  if(!S.dailyBig3[_today]) S.dailyBig3[_today]=[{t:'',done:false},{t:'',done:false},{t:'',done:false}];
+  if(!S.weeklyBig3[_wk]) S.weeklyBig3[_wk]=[{t:'',done:false},{t:'',done:false},{t:'',done:false}];
+  if(!S.dailyReview[_today]) S.dailyReview[_today]={};
+  if(!S.weeklyReview[_wk]) S.weeklyReview[_wk]={};
+}
 </script>
 
 <!-- ══ WORKOUT MODAL ══ -->
