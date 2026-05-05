@@ -1412,7 +1412,9 @@ const WEEKLY_Qs = [
 
 // ══ API KEY MANAGEMENT ══
 function getAPIKey() {
-  return localStorage.getItem('lifeos_apikey') || '';
+  const key = localStorage.getItem('lifeos_apikey') || '';
+  if(!key) console.warn('No API key in localStorage');
+  return key;
 }
 
 async function loadAPIKeyFromFirebase() {
@@ -2817,13 +2819,13 @@ async function callClaude(prompt, el) {
     const data=await res.json();
     if(data.error) {
       el.className='ai-text';
-      el.textContent='API error: '+data.error.message+' ('+data.error.type+')';
+      el.textContent='Error '+res.status+': '+data.error.message+' ('+data.error.type+') — Key used: '+getAPIKey().slice(0,20)+'...';
       return;
     }
     const text=data.content?.find(b=>b.type==='text')?.text||'Unable to generate response.';
     el.className='ai-text'; el.innerHTML=renderMarkdown(text);
   } catch(e){
-    el.className='ai-text'; el.textContent='Could not reach Claude: '+e.message;
+    el.className='ai-text'; el.textContent='Network error: '+e.message;
   }
 }
 
@@ -3249,6 +3251,24 @@ async function runFitnessAI(prompt) {
 // ══ DEVOTIONAL ══
 function devLoad() {
   if(!S.devotionals) S.devotionals = {};
+}
+
+
+function renderDevHistory() {
+  const wrap = document.getElementById('dev-history-list');
+  if(!wrap) return;
+  const entries = Object.entries(S.devotionals||{}).sort((a,b)=>b[0].localeCompare(a[0])).slice(1,8);
+  if(!entries.length) {
+    wrap.innerHTML='<div style="color:var(--ink4);font-size:13px;">Past devotionals will appear here.</div>';
+    return;
+  }
+  wrap.innerHTML = entries.map(([date,d])=>
+    '<div class="dev-history-item" data-date="'+date+'" onclick="viewPastDevotional(this.dataset.date)">'
+    +'<div class="dev-history-date">'+date+'</div>'
+    +'<div class="dev-history-ref">'+(d.reference||'—')+'</div>'
+    +(d.feedback?'<div style="font-size:11px;color:var(--green);margin-top:3px;">✓ Feedback received</div>':'')
+    +'</div>'
+  ).join('');
 }
 
 function renderDevotional() {
