@@ -1436,16 +1436,33 @@ async function loadAPIKeyFromFirebase() {
     const snap = await window._fbDb.doc('users/parker/config/apikey').get();
     if(snap.exists) {
       const key = snap.data().key;
-      if(key) localStorage.setItem('lifeos_apikey', key);
+      if(key) {
+        localStorage.setItem('lifeos_apikey', key);
+        console.log('API key loaded from Firebase:', key.slice(0,20)+'...');
+      }
+    } else {
+      console.log('No API key doc in Firebase yet');
     }
-  } catch(e) { console.warn('Could not load API key from Firebase:', e); }
+  } catch(e) { console.warn('Could not load API key from Firebase:', e.message); }
 }
 
 async function saveAPIKeyToFirebase(key) {
-  if(!fbInitialized || !window._fbDb) return;
+  // If Firebase not ready yet, wait up to 3s
+  if(!fbInitialized || !window._fbDb) {
+    let waited = 0;
+    while((!fbInitialized || !window._fbDb) && waited < 3000) {
+      await new Promise(r => setTimeout(r, 300));
+      waited += 300;
+    }
+  }
+  if(!fbInitialized || !window._fbDb) {
+    console.warn('Firebase not available - API key saved to localStorage only');
+    return;
+  }
   try {
     await window._fbDb.doc('users/parker/config/apikey').set({key});
-  } catch(e) { console.warn('Could not save API key to Firebase:', e); }
+    console.log('API key saved to Firebase');
+  } catch(e) { console.warn('Could not save API key to Firebase:', e.message); }
 }
 
 function getAPIHeaders() {
@@ -1505,10 +1522,16 @@ async function testAPIKey() {
 function saveAPIKey() {
   const key = document.getElementById('api-key-input').value.trim();
   if(!key.startsWith('sk-ant-')) { alert('That does not look like a valid Anthropic API key.'); return; }
-  // Store in localStorage for instant access
   localStorage.setItem('lifeos_apikey', key);
-  // Also save to separate Firebase path so it survives cache clears
   saveAPIKeyToFirebase(key);
+  // Show confirmation
+  const resultEl = document.getElementById('api-test-result');
+  if(resultEl) {
+    resultEl.style.display='block';
+    resultEl.style.background='var(--green-lt)';
+    resultEl.style.color='var(--green)';
+    resultEl.textContent='✓ Key saved locally. Syncing to Firebase...';
+  }
   document.getElementById('api-key-modal').classList.remove('open');
   alert('API key saved! All AI features are now active.');
 }
@@ -1577,9 +1600,14 @@ async function save() {
     if(!fbInitialized || !window._fbDb) return;
     try {
       const saveData = {...S}; delete saveData.apiKey;
+      setFirebaseStatus('syncing');
       await window._fbDb.doc(USER_PATH).set({data: JSON.stringify(saveData)}, {merge: true});
-    } catch(e) { console.warn('Firebase save failed:', e); }
-  }, 800);
+      setFirebaseStatus('synced');
+    } catch(e) {
+      console.warn('Firebase save failed:', e);
+      setFirebaseStatus('local');
+    }
+  }, 300);
 }
 
 async function loadFromFirebase() {
@@ -4259,6 +4287,40 @@ function mobileNav(pageId, el) {
 }
 
 // ══ INIT ══
+
+function setFirebaseStatus(status) {
+  const el = document.getElementById('firebase-status');
+  if(!el) return;
+  const map = {
+    syncing: {text:'↻ Syncing...', color:'var(--ink4)'},
+    synced:  {text:'✓ Synced', color:'var(--green)'},
+    local:   {text:'⚠ Local only', color:'var(--gold)'},
+    offline: {text:'⚡ Offline', color:'var(--red)'}
+  };
+  const s = map[status]||map.local;
+  el.textContent = s.text;
+  el.style.color = s.color;
+  if(status==='synced') setTimeout(()=>{el.textContent='';}, 3000);
+}
+
+
+// Force sync when app comes back to foreground (important for mobile)
+document.addEventListener('visibilitychange', async () => {
+  if(document.visibilityState === 'visible' && fbInitialized && window._fbDb) {
+    try {
+      const snap = await window._fbDb.doc(USER_PATH).get();
+      if(snap.exists) {
+        const parsed = JSON.parse(snap.data().data);
+        delete parsed.apiKey;
+        S = parsed;
+        initDefaults();
+        fitLoad(); devLoad(); renderToday();
+        setFirebaseStatus('synced');
+      }
+    } catch(e) { console.warn('Visibility sync failed:', e); }
+  }
+});
+
 (async function() {
   // Synchronously initialize all state from localStorage first
   try { const r=localStorage.getItem('lifeos_v3'); if(r) { const p=JSON.parse(r); Object.assign(S,p); } } catch(e) {}
@@ -4351,20 +4413,6 @@ async function syncNow() {
   }
 }
 
-function setFirebaseStatus(status) {
-  const el = document.getElementById('firebase-status');
-  if(!el) return;
-  const map = {
-    syncing: {text:'↻ Syncing...', color:'var(--ink4)'},
-    synced:  {text:'✓ Synced', color:'var(--green)'},
-    local:   {text:'⚠ Local only', color:'var(--gold)'},
-    offline: {text:'⚡ Offline', color:'var(--red)'}
-  };
-  const s = map[status]||map.local;
-  el.textContent = s.text;
-  el.style.color = s.color;
-  if(status==='synced') setTimeout(()=>{el.textContent='';}, 3000);
-}
 
 function initDefaults() {
   if(!S.habits) S.habits=[];
