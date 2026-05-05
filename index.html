@@ -473,6 +473,12 @@ select.input{cursor:pointer;}
 .habit-note-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:300;align-items:center;justify-content:center;padding:20px;}
 .habit-note-overlay.open{display:flex;}
 .habit-note-modal{background:var(--white);border-radius:var(--radius-lg);padding:24px;width:100%;max-width:460px;box-shadow:0 8px 32px rgba(0,0,0,0.12);}
+
+/* ── NOTE CHECKLIST ── */
+.note-checklist-item{display:flex;align-items:flex-start;gap:8px;margin:4px 0;padding:2px 0;}
+.note-checklist-item input[type="checkbox"]{width:16px;height:16px;margin-top:3px;flex-shrink:0;accent-color:var(--gold);cursor:pointer;}
+.note-checklist-item span{flex:1;outline:none;min-width:20px;}
+.note-checklist-item.checked span{text-decoration:line-through;color:var(--ink3);}
 </style>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
@@ -572,8 +578,11 @@ select.input{cursor:pointer;}
       <div id="day-cal-events"></div>
       <div class="add-event-row">
         <input class="input time-input" type="time" id="new-event-time" />
-        <input class="input" id="new-event-title" placeholder="Meeting, call, commitment..." style="flex:1;" onkeydown="if(event.key==='Enter')addCalEvent()"/>
+        <input class="input" id="new-event-title" placeholder="Meeting, call, commitment..." style="flex:1;" onkeydown="if(event.key==='Enter')document.getElementById('new-event-notes').focus()"/>
         <button class="btn sm" onclick="addCalEvent()">Add</button>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:6px;">
+        <input class="input" id="new-event-notes" placeholder="Context, prep needed, who's involved... (optional)" style="flex:1;font-size:12px;" onkeydown="if(event.key==='Enter')addCalEvent()"/>
       </div>
 
       <!-- OTHER PRIORITIES -->
@@ -1072,6 +1081,8 @@ select.input{cursor:pointer;}
             <button class="note-tool-btn" onclick="noteFormat('outdent')" title="Outdent (Shift+Tab)">←</button>
             <div style="width:1px;background:var(--border);margin:0 4px;"></div>
             <button class="note-tool-btn" onclick="noteFormat('formatBlock','blockquote')" title="Quote">" Quote</button>
+            <div style="width:1px;background:var(--border);margin:0 4px;"></div>
+            <button class="note-tool-btn" onclick="insertChecklist()" title="Insert checklist">☑ Check</button>
             <div style="flex:1;"></div>
             <button class="note-tool-btn" style="color:var(--red);border-color:#e0b0b0;" onclick="deleteCurrentNote()">Delete</button>
           </div>
