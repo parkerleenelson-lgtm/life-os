@@ -3829,20 +3829,20 @@ function saveDayPlan() {
 function addCalEvent() {
   const timeEl = document.getElementById('new-event-time');
   const titleEl = document.getElementById('new-event-title');
+  const notesEl = document.getElementById('new-event-notes');
   const title = titleEl.value.trim();
   if(!title) return;
   const today = todayKey();
   if(!S.dayPlan) S.dayPlan = {};
-  if(!S.tasks) S.tasks = [];
-  if(!S.notes) S.notes = [];
-  if(!S.weeklyPreview) S.weeklyPreview = {};
-  if(!S.ashley) S.ashley = {};
   if(!S.dayPlan[today]) S.dayPlan[today] = {events:[], priorities:''};
   const time = timeEl.value;
   const displayTime = time ? formatTime12h(time) : '';
-  S.dayPlan[today].events.push({time, displayTime, title});
+  const notes = notesEl ? notesEl.value.trim() : '';
+  S.dayPlan[today].events.push({time, displayTime, title, notes});
   S.dayPlan[today].events.sort((a,b)=>a.time.localeCompare(b.time));
   titleEl.value = ''; timeEl.value = '';
+  if(notesEl) notesEl.value = '';
+  titleEl.focus();
   save(); renderDayCalEvents();
 }
 
@@ -3869,13 +3869,17 @@ function renderDayCalEvents() {
     wrap.innerHTML = '<div style="font-size:13px;color:var(--ink4);padding:6px 0 4px;">No events added yet.</div>';
     return;
   }
-  wrap.innerHTML = events.map((e,i) => `
-    <div class="cal-event-row">
-      <div class="cal-event-time">${e.displayTime||'—'}</div>
-      <div class="cal-event-title">${e.title}</div>
-      <button class="cal-event-del" onclick="deleteCalEvent(${i})">×</button>
-    </div>
-  `).join('');
+  wrap.innerHTML = events.map((e,i) => {
+    const notesHtml = e.notes ? '<div style="font-size:11px;color:var(--ink3);font-style:italic;padding:2px 0 6px 52px;">'+e.notes+'</div>' : '';
+    return '<div>'
+      +'<div class="cal-event-row">'
+      +'<div class="cal-event-time">'+(e.displayTime||'—')+'</div>'
+      +'<div class="cal-event-title">'+e.title+'</div>'
+      +'<button class="cal-event-del" data-idx="'+i+'" onclick="deleteCalEvent(parseInt(this.dataset.idx))">×</button>'
+      +'</div>'
+      +notesHtml
+      +'</div>';
+  }).join('');
 }
 
 async function optimizeDayAI() {
