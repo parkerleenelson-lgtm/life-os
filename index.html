@@ -2342,6 +2342,53 @@ async function coachAI(type) {
   await callClaude(prompt, el);
 }
 
+
+// ── MARKDOWN RENDERER ──
+function renderMarkdown(text) {
+  if(!text) return '';
+  let html = text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+  
+  const lines = html.split('\n');
+  const out = [];
+  for(let i=0; i<lines.length; i++) {
+    let line = lines[i];
+    // Headers
+    if(line.startsWith('### ')) { out.push('<h3 style="font-size:14px;font-weight:600;margin:10px 0 4px;color:var(--ink);">'+line.slice(4)+'</h3>'); continue; }
+    if(line.startsWith('## ')) { out.push('<h2 style="font-size:15px;font-weight:600;margin:12px 0 5px;color:var(--ink);">'+line.slice(3)+'</h2>'); continue; }
+    if(line.startsWith('# ')) { out.push('<h1 style="font-size:17px;font-weight:700;margin:14px 0 6px;color:var(--ink);">'+line.slice(2)+'</h1>'); continue; }
+    // HR
+    if(line.match(/^-{3,}$/)) { out.push('<hr style="border:none;border-top:1px solid var(--border);margin:10px 0;">'); continue; }
+    // Bullets
+    if(line.match(/^[\-\*] /)||line.match(/^• /)) { 
+      const txt = line.replace(/^[\-\*•] /,'');
+      out.push('<div style="display:flex;gap:8px;margin:2px 0;"><span style="color:var(--gold);flex-shrink:0;">•</span><span>'+inlineFormat(txt)+'</span></div>');
+      continue;
+    }
+    // Numbered
+    if(line.match(/^\d+\. /)) {
+      const m = line.match(/^(\d+)\. (.*)/);
+      if(m) { out.push('<div style="display:flex;gap:8px;margin:2px 0;"><span style="color:var(--gold);font-weight:600;flex-shrink:0;min-width:16px;">'+m[1]+'.</span><span>'+inlineFormat(m[2])+'</span></div>'); continue; }
+    }
+    // Empty line = paragraph break
+    if(line.trim()==='') { out.push('<div style="height:8px;"></div>'); continue; }
+    // Normal paragraph
+    out.push('<p style="margin:3px 0;line-height:1.7;">'+inlineFormat(line)+'</p>');
+  }
+  return out.join('');
+}
+
+function inlineFormat(text) {
+  return text
+    .replace(/\*\*\*(.+?)\*\*\*/g, '<strong><em>$1</em></strong>')
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.+?)\*/g, '<em>$1</em>')
+    .replace(/_(.+?)_/g, '<em>$1</em>')
+    .replace(/`(.+?)`/g, '<code style="background:var(--surface);padding:1px 5px;border-radius:4px;font-size:12px;">$1</code>');
+}
+
 async function callClaude(prompt, el) {
   const key = getAPIKey();
   if(!key) {
@@ -2361,7 +2408,7 @@ async function callClaude(prompt, el) {
       return;
     }
     const text=data.content?.find(b=>b.type==='text')?.text||'Unable to generate response.';
-    el.className='ai-text'; el.textContent=text;
+    el.className='ai-text'; el.innerHTML=renderMarkdown(text);
   } catch(e){
     el.className='ai-text'; el.textContent='Could not reach Claude: '+e.message;
   }
