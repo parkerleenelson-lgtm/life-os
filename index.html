@@ -1330,7 +1330,7 @@ async function save() {
   // Debounced save to Firebase
   if(saveTimer) clearTimeout(saveTimer);
   saveTimer = setTimeout(async () => {
-    if(!fbInitialized || !window._fbDoc) return;
+    if(!fbInitialized || !window._fbDb) return;
     try {
       await window._fbDb.doc(USER_PATH).set({data: JSON.stringify(S)}, {merge: true});
     } catch(e) { console.warn('Firebase save failed:', e); }
@@ -1338,7 +1338,7 @@ async function save() {
 }
 
 async function loadFromFirebase() {
-  if(!fbInitialized || !window._fbDoc) return false;
+  if(!fbInitialized || !window._fbDb) return false;
   try {
     const snap = await window._fbDb.doc(USER_PATH).get();
     if(snap.exists) {
