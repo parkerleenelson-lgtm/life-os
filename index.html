@@ -430,6 +430,30 @@ select.input{cursor:pointer;}
 .note-editor ul ul,.note-editor ol ul,.note-editor ul ol,.note-editor ol ol{margin:2px 0;}
 .note-editor blockquote{border-left:3px solid var(--gold);padding-left:14px;color:var(--ink3);font-style:italic;margin:8px 0;}
 .note-editor:focus{outline:none;}
+
+/* ── ASHLEY ── */
+.ashley-section{margin-bottom:28px;}
+.ashley-card{background:var(--white);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px 22px;margin-bottom:10px;}
+.ashley-item-row{display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);}
+.ashley-item-row:last-child{border-bottom:none;}
+.ashley-item-check{width:18px;height:18px;border-radius:50%;border:1.5px solid var(--border2);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:9px;cursor:pointer;transition:all 0.12s;margin-top:2px;}
+.ashley-item-check.done{background:var(--green);border-color:var(--green);color:#fff;}
+.ashley-item-body{flex:1;}
+.ashley-item-text{font-size:14px;color:var(--ink);line-height:1.5;}
+.ashley-item-row.item-done .ashley-item-text{text-decoration:line-through;color:var(--ink3);}
+.ashley-item-note{font-size:12px;color:var(--ink3);font-style:italic;margin-top:3px;}
+.ashley-item-date{font-family:'DM Mono',monospace;font-size:10px;color:var(--ink4);margin-top:2px;}
+.ashley-item-actions{display:flex;gap:4px;opacity:0;transition:opacity 0.12s;flex-shrink:0;}
+.ashley-item-row:hover .ashley-item-actions{opacity:1;}
+.ashley-add-row{display:flex;gap:8px;margin-top:12px;}
+.ashley-category-header{display:flex;align-items:center;gap:10px;margin-bottom:14px;}
+.ashley-category-icon{font-size:18px;}
+.ashley-category-title{font-family:'DM Sans',sans-serif;font-size:16px;font-weight:600;color:var(--ink);}
+.ashley-category-count{font-family:'DM Mono',monospace;font-size:10px;color:var(--ink4);}
+.ashley-memory-card{background:var(--gold-lt);border:1px solid var(--gold-md);border-radius:var(--radius);padding:14px 16px;margin-bottom:8px;cursor:pointer;transition:background 0.12s;}
+.ashley-memory-card:hover{background:var(--gold-md);}
+.ashley-memory-text{font-size:13px;color:var(--ink2);line-height:1.6;}
+.ashley-memory-date{font-family:'DM Mono',monospace;font-size:10px;color:var(--ink3);margin-top:4px;}
 </style>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
@@ -463,6 +487,7 @@ select.input{cursor:pointer;}
     <button class="nav-tab" onclick="nav('devotional',this)">Devotional</button>
     <button class="nav-tab" onclick="nav('journal',this)">Journal</button>
     <button class="nav-tab" onclick="nav('notes',this)">Notes</button>
+    <button class="nav-tab" onclick="nav('ashley',this)">Ashley</button>
   </nav>
 
   <!-- Mobile nav -->
@@ -482,6 +507,7 @@ select.input{cursor:pointer;}
     <div class="mobile-menu-item" onclick="mobileNav('devotional',this)">Devotional</div>
     <div class="mobile-menu-item" onclick="mobileNav('journal',this)">Journal</div>
     <div class="mobile-menu-item" onclick="mobileNav('notes',this)">Notes</div>
+    <div class="mobile-menu-item" onclick="mobileNav('ashley',this)">Ashley</div>
   </div>
 
   <!-- ══ TODAY ══ -->
@@ -966,6 +992,107 @@ select.input{cursor:pointer;}
     </div>
   </div>
 
+
+  <!-- ══ ASHLEY ══ -->
+  <div id="page-ashley" class="page">
+    <div style="margin-bottom:24px;">
+      <div class="display">Ashley <em>♡</em></div>
+      <div style="font-size:13px;color:var(--ink3);margin-top:4px;">Things to revisit, date ideas, memories, conversations worth having</div>
+    </div>
+
+    <!-- DATE IDEAS -->
+    <div class="ashley-card ashley-section">
+      <div class="ashley-category-header">
+        <div class="ashley-category-icon">🌙</div>
+        <div class="ashley-category-title">Date ideas</div>
+        <div class="ashley-category-count" id="ashley-dates-count"></div>
+      </div>
+      <div id="ashley-dates-list"></div>
+      <div class="ashley-add-row">
+        <input class="input" id="ashley-date-input" placeholder="Add a date idea..." style="flex:1;" onkeydown="if(event.key==='Enter')addAshleyItem('dates')"/>
+        <input class="input" id="ashley-date-note" placeholder="Note (optional)..." style="width:180px;font-size:12px;" onkeydown="if(event.key==='Enter')addAshleyItem('dates')"/>
+        <button class="btn sm" onclick="addAshleyItem('dates')">Add</button>
+      </div>
+    </div>
+
+    <!-- TOPICS TO DISCUSS -->
+    <div class="ashley-card ashley-section">
+      <div class="ashley-category-header">
+        <div class="ashley-category-icon">💬</div>
+        <div class="ashley-category-title">Topics to discuss</div>
+        <div class="ashley-category-count" id="ashley-topics-count"></div>
+      </div>
+      <div id="ashley-topics-list"></div>
+      <div class="ashley-add-row">
+        <input class="input" id="ashley-topic-input" placeholder="Something you want to talk about..." style="flex:1;" onkeydown="if(event.key==='Enter')addAshleyItem('topics')"/>
+        <input class="input" id="ashley-topic-note" placeholder="Note (optional)..." style="width:180px;font-size:12px;" onkeydown="if(event.key==='Enter')addAshleyItem('topics')"/>
+        <button class="btn sm" onclick="addAshleyItem('topics')">Add</button>
+      </div>
+    </div>
+
+    <!-- THINGS SHE LIKES -->
+    <div class="ashley-card ashley-section">
+      <div class="ashley-category-header">
+        <div class="ashley-category-icon">⭐</div>
+        <div class="ashley-category-title">Things she loves</div>
+        <div class="ashley-category-count" id="ashley-likes-count"></div>
+      </div>
+      <div id="ashley-likes-list"></div>
+      <div class="ashley-add-row">
+        <input class="input" id="ashley-like-input" placeholder="Something Ashley loves, wants, or mentioned..." style="flex:1;" onkeydown="if(event.key==='Enter')addAshleyItem('likes')"/>
+        <input class="input" id="ashley-like-note" placeholder="Context..." style="width:180px;font-size:12px;" onkeydown="if(event.key==='Enter')addAshleyItem('likes')"/>
+        <button class="btn sm" onclick="addAshleyItem('likes')">Add</button>
+      </div>
+    </div>
+
+    <!-- MEMORIES -->
+    <div class="ashley-card ashley-section">
+      <div class="ashley-category-header">
+        <div class="ashley-category-icon">📸</div>
+        <div class="ashley-category-title">Memories & moments</div>
+        <div class="ashley-category-count" id="ashley-memories-count"></div>
+      </div>
+      <div id="ashley-memories-list"></div>
+      <div class="ashley-add-row">
+        <input class="input" id="ashley-memory-input" placeholder="A moment worth remembering..." style="flex:1;" onkeydown="if(event.key==='Enter')addAshleyItem('memories')"/>
+        <button class="btn sm" onclick="addAshleyItem('memories')">Add</button>
+      </div>
+    </div>
+
+    <!-- PRAYER & INTENTIONS -->
+    <div class="ashley-card ashley-section">
+      <div class="ashley-category-header">
+        <div class="ashley-category-icon">🙏</div>
+        <div class="ashley-category-title">Praying for her</div>
+        <div class="ashley-category-count" id="ashley-prayers-count"></div>
+      </div>
+      <div id="ashley-prayers-list"></div>
+      <div class="ashley-add-row">
+        <input class="input" id="ashley-prayer-input" placeholder="Something to lift up for Ashley..." style="flex:1;" onkeydown="if(event.key==='Enter')addAshleyItem('prayers')"/>
+        <button class="btn sm" onclick="addAshleyItem('prayers')">Add</button>
+      </div>
+    </div>
+
+    <!-- AI RELATIONSHIP COACH -->
+    <div class="ashley-card" style="margin-top:6px;">
+      <div style="margin-bottom:12px;">
+        <div class="section-title">Relationship coach</div>
+        <div style="font-size:12px;color:var(--ink3);margin-top:2px;">Get ideas, plan a date, or think through something with your relationship in mind</div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;">
+        <button class="btn sm" onclick="ashleyAI('date')">Plan a date night</button>
+        <button class="btn sm" onclick="ashleyAI('gift')">Gift ideas</button>
+        <button class="btn sm" onclick="ashleyAI('conversation')">Conversation starters</button>
+        <button class="btn sm gold" onclick="ashleyCustomAI()">Ask ↗</button>
+      </div>
+      <input class="input" id="ashley-ai-input" placeholder="Ask anything about your relationship..." style="margin-bottom:10px;"/>
+      <div id="ashley-ai-panel" style="display:none;" class="ai-panel">
+        <div class="ai-header"><div class="ai-dot"></div><div class="ai-label">Claude — relationship coach</div></div>
+        <div class="ai-text" id="ashley-ai-text"></div>
+      </div>
+    </div>
+  </div>
+
 <!-- ══ HABIT MODAL ══ -->
 <div class="overlay" id="habit-modal">
   <div class="modal">
@@ -1247,6 +1374,7 @@ async function load() {
   if(!S.dayPlan) S.dayPlan = {};
   if(!S.tasks) S.tasks = [];
   if(!S.notes) S.notes = [];
+  if(!S.ashley) S.ashley = {};
 
   const today = todayKey(), wk = weekKey();
   if(!S.dailyBig3[today]) S.dailyBig3[today] = [{t:'',done:false},{t:'',done:false},{t:'',done:false}];
@@ -1875,7 +2003,7 @@ function renderWeek() {
 }
 
 // ══ RENDER MAP ══
-const renders={today:renderToday,habits:renderHabitsPage,goals:renderGoalsPage,tasks:renderTasksPage,reflect:renderReflect,week:renderWeek,fitness:renderFitness,devotional:renderDevotional,journal:renderJournal,notes:renderNotes};
+const renders={today:renderToday,habits:renderHabitsPage,goals:renderGoalsPage,tasks:renderTasksPage,reflect:renderReflect,week:renderWeek,fitness:renderFitness,devotional:renderDevotional,journal:renderJournal,notes:renderNotes,ashley:renderAshley};
 
 // ══ HELPER: SELECTS ══
 function populateDomainSelect(id) {
@@ -2665,6 +2793,7 @@ const BUCKETS = [
 function taskLoad() {
   if(!S.tasks) S.tasks = [];
   if(!S.notes) S.notes = [];
+  if(!S.ashley) S.ashley = {};
 }
 
 function setTaskFilter(filter, el) {
@@ -2916,6 +3045,7 @@ let noteSaveTimer = null;
 
 function notesLoad() {
   if(!S.notes) S.notes = [];
+  if(!S.ashley) S.ashley = {};
 }
 
 function renderNotes() {
@@ -3122,6 +3252,128 @@ async function runNoteAI(prompt) {
   await callClaude(prompt, el);
 }
 
+
+// ══ ASHLEY ══
+const ASHLEY_CATEGORIES = [
+  {id:'dates',    label:'Date ideas',       icon:'🌙'},
+  {id:'topics',   label:'Topics to discuss',icon:'💬'},
+  {id:'likes',    label:'Things she loves', icon:'⭐'},
+  {id:'memories', label:'Memories',         icon:'📸'},
+  {id:'prayers',  label:'Praying for her',  icon:'🙏'}
+];
+
+function ashleyLoad() {
+  if(!S.ashley) S.ashley = {};
+  ASHLEY_CATEGORIES.forEach(c => { if(!S.ashley[c.id]) S.ashley[c.id] = []; });
+}
+
+function renderAshley() {
+  ashleyLoad();
+  ASHLEY_CATEGORIES.forEach(c => renderAshleyCategory(c.id));
+}
+
+function renderAshleyCategory(catId) {
+  const list = document.getElementById('ashley-'+catId+'-list');
+  const countEl = document.getElementById('ashley-'+catId+'-count');
+  if(!list) return;
+  const items = S.ashley[catId]||[];
+  const active = items.filter(x=>!x.done);
+  if(countEl) countEl.textContent = active.length + ' item'+(active.length!==1?'s':'');
+
+  if(!items.length) {
+    list.innerHTML = '<div style="font-size:13px;color:var(--ink4);padding:8px 0 4px;">Nothing added yet.</div>';
+    return;
+  }
+
+  list.innerHTML = items.map((item, i) => {
+    const noteHtml = item.note ? '<div class="ashley-item-note">'+item.note+'</div>' : '';
+    const dateHtml = item.date ? '<div class="ashley-item-date">'+item.date+'</div>' : '';
+    return '<div class="ashley-item-row'+(item.done?' item-done':'')+'">'
+      +'<div class="ashley-item-check'+(item.done?' done':'')+'" data-cat="'+catId+'" data-idx="'+i+'" onclick="toggleAshleyItem(this.dataset.cat,parseInt(this.dataset.idx))">'+(item.done?'✓':'')+'</div>'
+      +'<div class="ashley-item-body">'
+      +'<div class="ashley-item-text">'+item.text+'</div>'
+      +noteHtml+dateHtml
+      +'</div>'
+      +'<div class="ashley-item-actions">'
+      +'<button class="btn sm danger" data-cat="'+catId+'" data-idx="'+i+'" onclick="deleteAshleyItem(this.dataset.cat,parseInt(this.dataset.idx))">×</button>'
+      +'</div>'
+      +'</div>';
+  }).join('');
+}
+
+function addAshleyItem(catId) {
+  ashleyLoad();
+  const inp = document.getElementById('ashley-'+catId.replace('ies','y').replace(/s$/,'')+'-input') 
+           || document.getElementById('ashley-'+catId+'-input');
+  // Try common input id patterns
+  const inputMap = {dates:'ashley-date-input', topics:'ashley-topic-input', likes:'ashley-like-input', memories:'ashley-memory-input', prayers:'ashley-prayer-input'};
+  const noteMap = {dates:'ashley-date-note', topics:'ashley-topic-note', likes:'ashley-like-note'};
+  const inputEl = document.getElementById(inputMap[catId]);
+  const noteEl = document.getElementById(noteMap[catId]);
+  if(!inputEl) return;
+  const text = inputEl.value.trim();
+  if(!text) return;
+  S.ashley[catId].unshift({
+    text,
+    note: noteEl ? noteEl.value.trim() : '',
+    done: false,
+    date: new Date().toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})
+  });
+  inputEl.value = '';
+  if(noteEl) noteEl.value = '';
+  save();
+  renderAshleyCategory(catId);
+}
+
+function toggleAshleyItem(catId, idx) {
+  ashleyLoad();
+  if(!S.ashley[catId]||!S.ashley[catId][idx]) return;
+  S.ashley[catId][idx].done = !S.ashley[catId][idx].done;
+  save();
+  renderAshleyCategory(catId);
+}
+
+function deleteAshleyItem(catId, idx) {
+  ashleyLoad();
+  S.ashley[catId].splice(idx, 1);
+  save();
+  renderAshleyCategory(catId);
+}
+
+function ashleyAI(type) {
+  ashleyLoad();
+  const dates = S.ashley.dates.filter(x=>!x.done).map(x=>x.text).join(', ') || 'none saved';
+  const likes = S.ashley.likes.filter(x=>!x.done).map(x=>x.text).join(', ') || 'none saved';
+  const memories = S.ashley.memories.slice(0,5).map(x=>x.text).join(', ') || 'none saved';
+  const context = 'Parker Nelson is a Christian man in Frisco TX, enterprise AE at Workday, intentional husband. His wife is Ashley.\nDate ideas already saved: '+dates+'.\nThings Ashley loves: '+likes+'.\nRecent memories: '+memories+'.';
+  const prompts = {
+    date: context+'\n\nSuggest 3 specific, creative date night ideas for Parker and Ashley in the DFW/Frisco area. Consider their faith, his busy schedule, and making her feel special. Be specific — name actual places or activities.',
+    gift: context+'\n\nSuggest 5 thoughtful gift ideas for Ashley based on what she loves. Mix practical and sentimental. Include a price range for each. Be specific.',
+    conversation: context+'\n\nSuggest 5 meaningful conversation starters for Parker and Ashley — deep, fun, or faith-based topics that strengthen their connection. Not surface level.'
+  };
+  runAshleyAI(prompts[type]);
+}
+
+function ashleyCustomAI() {
+  const q = document.getElementById('ashley-ai-input').value.trim();
+  if(!q) { alert('Type a question first.'); return; }
+  ashleyLoad();
+  const dates = S.ashley.dates.filter(x=>!x.done).map(x=>x.text).join(', ') || 'none';
+  const likes = S.ashley.likes.filter(x=>!x.done).map(x=>x.text).join(', ') || 'none';
+  const prompt = 'Parker Nelson, Christian husband in Frisco TX. Wife: Ashley. Date ideas saved: '+dates+'. Things she loves: '+likes+'.\n\nQuestion: '+q+'\n\nAnswer helpfully and specifically.';
+  runAshleyAI(prompt);
+}
+
+async function runAshleyAI(prompt) {
+  const panel = document.getElementById('ashley-ai-panel');
+  const el = document.getElementById('ashley-ai-text');
+  if(!panel||!el) return;
+  panel.style.display='block';
+  el.className='ai-text loading';
+  el.textContent='Thinking...';
+  await callClaude(prompt, el);
+}
+
 // ══ EXPORT / IMPORT ══
 function exportData() {
   const blob = new Blob([JSON.stringify(S, null, 2)], {type:'application/json'});
@@ -3163,6 +3415,7 @@ function saveDayPlan() {
   if(!S.dayPlan) S.dayPlan = {};
   if(!S.tasks) S.tasks = [];
   if(!S.notes) S.notes = [];
+  if(!S.ashley) S.ashley = {};
   if(!S.dayPlan[today]) S.dayPlan[today] = {events:[], priorities:''};
   S.dayPlan[today].priorities = document.getElementById('day-priorities').value;
   save();
@@ -3177,6 +3430,7 @@ function addCalEvent() {
   if(!S.dayPlan) S.dayPlan = {};
   if(!S.tasks) S.tasks = [];
   if(!S.notes) S.notes = [];
+  if(!S.ashley) S.ashley = {};
   if(!S.dayPlan[today]) S.dayPlan[today] = {events:[], priorities:''};
   const time = timeEl.value;
   const displayTime = time ? formatTime12h(time) : '';
@@ -3307,6 +3561,7 @@ function mobileNav(pageId, el) {
   if(!S.dayPlan) S.dayPlan = {};
   if(!S.tasks) S.tasks = [];
   if(!S.notes) S.notes = [];
+  if(!S.ashley) S.ashley = {};
   if(!S.macros) S.macros = {};
   if(!S.workouts) S.workouts = [];
   if(!S.macroTargets) S.macroTargets = {cal:2800,protein:220,carbs:280,fat:80,water:128};
