@@ -555,6 +555,9 @@ select.input{cursor:pointer;}
       <textarea class="input" id="day-priorities" placeholder="Anything else that needs to happen today — tasks, calls, follow-ups, errands..." style="min-height:70px;" oninput="saveDayPlan()"></textarea>
 
       <!-- AI OUTPUT -->
+      <div style="display:flex;justify-content:flex-end;margin-top:6px;">
+        <button class="btn sm danger" onclick="clearDayPlanner()">Clear planner</button>
+      </div>
       <div id="day-optimize-ai" style="display:none;margin-top:12px;" class="ai-panel">
         <div class="ai-header"><div class="ai-dot"></div><div class="ai-label">Claude — daily game plan</div></div>
         <div class="ai-text" id="day-optimize-text"></div>
@@ -568,6 +571,9 @@ select.input{cursor:pointer;}
         <button class="btn sm gold" onclick="brainDumpAI()">Process with AI ↗</button>
       </div>
       <textarea class="input" id="brain-dump" placeholder="Just write. No format required. Get it all out of your head..." style="margin-top:12px;min-height:110px;"></textarea>
+      <div style="display:flex;justify-content:flex-end;margin-top:6px;">
+        <button class="btn sm danger" onclick="clearBrainDump()">Clear dump</button>
+      </div>
       <div id="brain-dump-ai" style="display:none;" class="ai-panel">
         <div class="ai-header"><div class="ai-dot"></div><div class="ai-label">Claude — clarity + next actions</div></div>
         <div class="ai-text" id="brain-dump-ai-text"></div>
@@ -1511,6 +1517,29 @@ function big3Streak() {
 }
 
 
+
+function clearBrainDump() {
+  const today = todayKey();
+  S.brainDump[today] = '';
+  save();
+  const ta = document.getElementById('brain-dump');
+  if(ta) ta.value = '';
+  const ai = document.getElementById('brain-dump-ai');
+  if(ai) ai.style.display = 'none';
+}
+
+function clearDayPlanner() {
+  const today = todayKey();
+  if(!S.dayPlan) S.dayPlan = {};
+  S.dayPlan[today] = {events:[], priorities:''};
+  save();
+  renderDayCalEvents();
+  const pri = document.getElementById('day-priorities');
+  if(pri) pri.value = '';
+  const ai = document.getElementById('day-optimize-ai');
+  if(ai) ai.style.display = 'none';
+}
+
 function saveReflection() {
   const today = todayKey();
   const text = document.getElementById('daily-reflect-text').value.trim();
@@ -1539,6 +1568,13 @@ function nextPrompt() {
   const p = DAILY_PROMPTS[promptIdx];
   setEl('reflect-q', p.q);
   setEl('reflect-src', p.src);
+  // Clear the textarea and coaching panel for fresh start
+  const ta = document.getElementById('daily-reflect-text');
+  if(ta) ta.value = '';
+  const coach = document.getElementById('daily-coach-ai');
+  if(coach) coach.style.display = 'none';
+  const saved = document.getElementById('reflect-saved');
+  if(saved) saved.style.opacity = '0';
 }
 
 
