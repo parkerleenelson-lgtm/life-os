@@ -4314,8 +4314,10 @@ document.querySelectorAll('.muscle-sel-btn').forEach(b=>{
       <input class="input" id="api-key-input" type="password" placeholder="sk-ant-api03-..." />
       <div class="form-hint">Starts with sk-ant-api03-</div>
     </div>
+    <div id="api-test-result" style="font-size:12px;margin-top:8px;padding:8px;border-radius:6px;display:none;"></div>
     <div class="modal-actions">
       <button class="btn" onclick="closeModal('api-key-modal')">Skip for now</button>
+      <button class="btn" onclick="testAPIKey()">Test key</button>
       <button class="btn primary" onclick="saveAPIKey()">Save key</button>
     </div>
   </div>
