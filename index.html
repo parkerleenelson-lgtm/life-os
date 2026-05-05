@@ -454,6 +454,25 @@ select.input{cursor:pointer;}
 .ashley-memory-card:hover{background:var(--gold-md);}
 .ashley-memory-text{font-size:13px;color:var(--ink2);line-height:1.6;}
 .ashley-memory-date{font-family:'DM Mono',monospace;font-size:10px;color:var(--ink3);margin-top:4px;}
+
+/* ── HABIT MONTHLY VIEW ── */
+.monthly-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin-top:8px;}
+.monthly-cell{aspect-ratio:1;border-radius:6px;border:1px solid var(--border);background:var(--surface);display:flex;align-items:center;justify-content:center;font-size:10px;font-family:"DM Mono",monospace;color:var(--ink4);cursor:pointer;transition:all 0.12s;position:relative;}
+.monthly-cell.done{background:var(--green);border-color:var(--green);color:#fff;}
+.monthly-cell.today-m{border-color:var(--gold);border-width:2px;}
+.monthly-cell.empty-m{background:transparent;border-color:transparent;cursor:default;}
+.monthly-cell.future-m{opacity:0.3;pointer-events:none;}
+.monthly-nav{display:flex;align-items:center;gap:10px;margin-bottom:8px;}
+.monthly-nav-btn{background:none;border:1px solid var(--border);border-radius:6px;padding:4px 10px;cursor:pointer;font-size:13px;color:var(--ink3);}
+.monthly-nav-btn:hover{background:var(--surface);}
+.monthly-month-label{font-size:13px;font-weight:600;color:var(--ink);flex:1;text-align:center;}
+.freq-badge{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-family:"DM Mono",monospace;padding:2px 8px;border-radius:10px;background:var(--surface);border:1px solid var(--border);color:var(--ink3);}
+.freq-badge.on-track{background:var(--green-lt);border-color:var(--green);color:var(--green);}
+.freq-badge.behind{background:var(--red-lt);border-color:var(--red);color:var(--red);}
+/* Habit note modal */
+.habit-note-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:300;align-items:center;justify-content:center;padding:20px;}
+.habit-note-overlay.open{display:flex;}
+.habit-note-modal{background:var(--white);border-radius:var(--radius-lg);padding:24px;width:100%;max-width:460px;box-shadow:0 8px 32px rgba(0,0,0,0.12);}
 </style>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
@@ -1119,6 +1138,23 @@ select.input{cursor:pointer;}
     </div>
   </div>
 
+
+<!-- ══ HABIT NOTE MODAL ══ -->
+<div class="habit-note-overlay" id="habit-note-modal">
+  <div class="habit-note-modal">
+    <div style="font-size:16px;font-weight:600;margin-bottom:4px;" id="hn-habit-name">Log habit</div>
+    <div style="font-size:12px;color:var(--ink3);margin-bottom:16px;" id="hn-date-label"></div>
+    <div class="form-row">
+      <label class="form-label">Add a note <span style="font-weight:300;color:var(--ink3)">(optional)</span></label>
+      <textarea class="input" id="hn-note" placeholder="How did it go? Any observations..." style="min-height:80px;"></textarea>
+    </div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px;">
+      <button class="btn" onclick="closeHabitNoteModal()">Skip</button>
+      <button class="btn primary" onclick="saveHabitNote()">Save ✓</button>
+    </div>
+  </div>
+</div>
+
 <!-- ══ HABIT MODAL ══ -->
 <div class="overlay" id="habit-modal">
   <div class="modal">
@@ -1127,6 +1163,18 @@ select.input{cursor:pointer;}
     <div class="form-row">
       <label class="form-label">Habit name</label>
       <input class="input" id="hm-name" placeholder="e.g. Morning devotional, FST-7 workout, Read 20 min"/>
+    </div>
+    <div class="form-row">
+      <label class="form-label">Frequency goal</label>
+      <select class="input" id="hm-frequency">
+        <option value="7">Daily (7x/week)</option>
+        <option value="6">6x per week</option>
+        <option value="5">5x per week</option>
+        <option value="4">4x per week</option>
+        <option value="3">3x per week</option>
+        <option value="2">2x per week</option>
+        <option value="1">1x per week</option>
+      </select>
     </div>
     <div class="form-row">
       <label class="form-label">Linked domain <span style="font-weight:300;color:var(--ink3)">(optional)</span></label>
@@ -1497,7 +1545,7 @@ function renderToday() {
       div.style.marginBottom = '10px';
       div.innerHTML = `
         <div class="habit-top">
-          <div class="habit-check-big" onclick="toggleHabitToday('${h.id}')">${done?'✓':''}</div>
+          <div class="habit-check-big" onclick="toggleHabitTodayWithNote('${h.id}')">${done?'✓':''}</div>
           <div class="habit-info">
             <div class="habit-name">${h.name}</div>
             <div class="habit-meta">
@@ -1751,8 +1799,20 @@ function renderHabitsPage() {
         <div class="week-grid">${weekGrid}</div>
         <div class="label" style="margin:14px 0 6px;">Last 90 days</div>
         <div class="heatmap">${heatmap}</div>
+        <div style="margin-top:12px;">
+          <button class="btn sm" onclick="toggleMonthlyView('${h.id}')" style="font-size:11px;">📅 Monthly view</button>
+        </div>
+        <div id="monthly-${h.id}" style="display:none;margin-top:10px;"></div>
       </div>
     `;
+    // Show note for today if exists
+    const todayNote = (S.habitLog[h.id]||{})[todayKey()+'_note'];
+    if(todayNote) {
+      const noteDiv = document.createElement('div');
+      noteDiv.style.cssText = 'font-size:12px;color:var(--ink3);font-style:italic;padding:8px 14px 14px 52px;line-height:1.5;';
+      noteDiv.textContent = '📝 '+todayNote;
+      card.appendChild(noteDiv);
+    }
     list.appendChild(card);
   });
 }
@@ -1779,12 +1839,14 @@ function openHabitModal(hid) {
     document.getElementById('hm-domain').value=h.domain||'';
     document.getElementById('hm-goal').value=h.goalId||'';
     document.getElementById('hm-why').value=h.why||'';
+    document.getElementById('hm-frequency').value=h.frequency||'7';
   } else {
     document.getElementById('hm-title').textContent='New habit';
     document.getElementById('hm-name').value='';
     document.getElementById('hm-domain').value='';
     document.getElementById('hm-goal').value='';
     document.getElementById('hm-why').value='';
+    document.getElementById('hm-frequency').value='7';
   }
   openModal('habit-modal');
 }
@@ -1795,7 +1857,8 @@ function saveHabit() {
     id:editingHabitId||('h'+Date.now()),
     name, domain:document.getElementById('hm-domain').value,
     goalId:document.getElementById('hm-goal').value,
-    why:document.getElementById('hm-why').value.trim()
+    why:document.getElementById('hm-why').value.trim(),
+    frequency:document.getElementById('hm-frequency').value||'7'
   };
   if(editingHabitId){S.habits=S.habits.map(h=>h.id===editingHabitId?habit:h);}
   else{S.habits.push(habit);}
@@ -3040,6 +3103,128 @@ function clearDealStress() {
   if(ai) ai.style.display = 'none';
 }
 
+
+
+// ══ HABIT TRACKING ENHANCEMENTS ══
+let habitNoteContext = null; // {hid, key}
+let habitMonthView = {}; // hid -> {year, month}
+
+function getHabitFrequency(h) {
+  return parseInt(h.frequency)||7;
+}
+
+function habitWeekProgress(hid) {
+  const log = S.habitLog[hid]||{};
+  const days = getWeekDays();
+  const now = new Date();
+  return days.filter(d=>{
+    const k = d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
+    return d <= now && log[k];
+  }).length;
+}
+
+function toggleHabitTodayWithNote(hid) {
+  if(!S.habitLog[hid]) S.habitLog[hid]={};
+  const today = todayKey();
+  const wasChecked = S.habitLog[hid][today];
+  if(wasChecked) {
+    // Unchecking - just toggle
+    S.habitLog[hid][today] = false;
+    delete S.habitLog[hid][today+'_note'];
+    save(); renderToday(); return;
+  }
+  // Checking - mark done then show note modal
+  S.habitLog[hid][today] = true;
+  save();
+  renderToday();
+  // Show note modal
+  const h = S.habits.find(x=>x.id===hid);
+  if(!h) return;
+  habitNoteContext = {hid, key: today};
+  document.getElementById('hn-habit-name').textContent = h.name;
+  document.getElementById('hn-date-label').textContent = new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
+  document.getElementById('hn-note').value = S.habitLog[hid][today+'_note']||'';
+  document.getElementById('habit-note-modal').classList.add('open');
+}
+
+function closeHabitNoteModal() {
+  document.getElementById('habit-note-modal').classList.remove('open');
+  habitNoteContext = null;
+}
+
+function saveHabitNote() {
+  if(!habitNoteContext) { closeHabitNoteModal(); return; }
+  const {hid, key} = habitNoteContext;
+  const note = document.getElementById('hn-note').value.trim();
+  if(!S.habitLog[hid]) S.habitLog[hid]={};
+  if(note) S.habitLog[hid][key+'_note'] = note;
+  save();
+  closeHabitNoteModal();
+  renderHabitsPage();
+}
+
+function buildMonthlyView(hid, year, month) {
+  const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  const firstDay = new Date(year, month, 1).getDay();
+  const daysInMonth = new Date(year, month+1, 0).getDate();
+  const today = todayKey();
+  const log = S.habitLog[hid]||{};
+  const dayNames = ['S','M','T','W','T','F','S'];
+
+  const pY=month===0?year-1:year, pM=month===0?11:month-1;
+  const nY=month===11?year+1:year, nM=month===11?0:month+1;
+  let html = '<div class="monthly-nav">'
+    +'<button class="monthly-nav-btn" data-hid="'+hid+'" data-y="'+pY+'" data-m="'+pM+'" onclick="navHabitMonth(this.dataset.hid,+this.dataset.y,+this.dataset.m)">‹</button>'
+    +'<div class="monthly-month-label">'+months[month]+' '+year+'</div>'
+    +'<button class="monthly-nav-btn" data-hid="'+hid+'" data-y="'+nY+'" data-m="'+nM+'" onclick="navHabitMonth(this.dataset.hid,+this.dataset.y,+this.dataset.m)">›</button>'
+    +'</div>'
+
+  // Day name headers
+  dayNames.forEach(d => { html += '<div style="text-align:center;font-size:9px;color:var(--ink4);padding:2px 0;font-family:DM Mono,monospace;">'+d+'</div>'; });
+
+  // Empty cells
+  for(let i=0;i<firstDay;i++) html += '<div class="monthly-cell empty-m"></div>';
+
+  const now = new Date();
+  for(let d=1;d<=daysInMonth;d++) {
+    const key = year+'-'+pad(month+1)+'-'+pad(d);
+    const isToday = key===today;
+    const isFuture = new Date(year,month,d) > now;
+    const isDone = !!log[key];
+    const hasNote = !!log[key+'_note'];
+    let cls = 'monthly-cell';
+    if(isDone) cls += ' done';
+    if(isToday) cls += ' today-m';
+    if(isFuture) cls += ' future-m';
+    html += '<div class="'+cls+'" data-hid="'+hid+'" data-key="'+key+'" onclick="toggleHabitDay(this.dataset.hid,this.dataset.key)" title="'+key+(hasNote?' — '+log[key+'_note']:'')+'">'
+      +d
+      +(hasNote&&isDone?'<div style="width:4px;height:4px;background:#fff;border-radius:50%;position:absolute;bottom:3px;right:3px;opacity:0.8;"></div>':'')
+      +'</div>';
+  }
+  html += '</div>';
+  return html;
+}
+
+function navHabitMonth(hid, year, month) {
+  habitMonthView[hid] = {year, month};
+  const el = document.getElementById('monthly-'+hid);
+  if(el) el.innerHTML = buildMonthlyView(hid, year, month);
+}
+
+function toggleMonthlyView(hid) {
+  const el = document.getElementById('monthly-'+hid);
+  if(!el) return;
+  if(el.style.display==='none'||!el.style.display) {
+    if(!habitMonthView[hid]) {
+      const now = new Date();
+      habitMonthView[hid] = {year:now.getFullYear(), month:now.getMonth()};
+    }
+    el.innerHTML = buildMonthlyView(hid, habitMonthView[hid].year, habitMonthView[hid].month);
+    el.style.display='block';
+  } else {
+    el.style.display='none';
+  }
+}
 
 // ══ TASKS (GTD) ══
 let editingTaskId = null;
