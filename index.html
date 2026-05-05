@@ -1229,9 +1229,12 @@ select.input{cursor:pointer;}
       <label class="form-label">Add a note <span style="font-weight:300;color:var(--ink3)">(optional)</span></label>
       <textarea class="input" id="hn-note" placeholder="How did it go? Any observations..." style="min-height:80px;"></textarea>
     </div>
-    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px;">
-      <button class="btn" onclick="closeHabitNoteModal()">Skip</button>
-      <button class="btn primary" onclick="saveHabitNote()">Save ✓</button>
+    <div style="display:flex;gap:8px;justify-content:space-between;margin-top:16px;">
+      <button class="btn danger" onclick="uncheckHabitDay()" id="hn-uncheck-btn" style="display:none;">Uncheck day</button>
+      <div style="display:flex;gap:8px;margin-left:auto;">
+        <button class="btn" onclick="closeHabitNoteModal()">Skip</button>
+        <button class="btn primary" onclick="saveHabitNote()">Save ✓</button>
+      </div>
     </div>
   </div>
 </div>
@@ -3391,6 +3394,7 @@ async function loadDevotional() {
   wrap.innerHTML = '<div style="color:var(--ink3);font-style:italic;font-size:13px;">Loading today\'s scripture...</div>';
   const dqwH=document.getElementById('dev-questions-wrap'); if(dqwH) dqwH.style.display='none';
   const dfwH=document.getElementById('dev-feedback-wrap'); if(dfwH) dfwH.style.display='none';
+  const today = todayKey();
   const key = getAPIKey();
   if(!key) {
     wrap.innerHTML = '<div style="color:var(--red);font-size:13px;">No API key set. Click "API key" in the header to add yours.</div>';
@@ -3604,22 +3608,78 @@ function toggleHabitTodayWithNote(hid) {
 
 function closeHabitNoteModal() {
   document.getElementById('habit-note-modal').classList.remove('open');
-  const ctx = habitNoteContext;
   habitNoteContext = null;
-  if(ctx && ctx.onClose) ctx.onClose();
+}
+
+// ── HABIT NOTE MODAL ──
+function openHabitNoteModal(hid, key) {
+  const h = S.habits.find(x=>x.id===hid);
+  if(!h) return;
+  habitNoteContext = {hid, key};
+  document.getElementById('hn-habit-name').textContent = h.name;
+  const d = new Date(key+'T12:00:00');
+  document.getElementById('hn-date-label').textContent = d.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
+  document.getElementById('hn-note').value = (S.habitLog[hid]||{})[key+'_note']||'';
+  // Show uncheck button if day is already checked
+  const uncheckBtn = document.getElementById('hn-uncheck-btn');
+  if(uncheckBtn) uncheckBtn.style.display = (S.habitLog[hid]||{})[key] ? 'block' : 'none';
+  document.getElementById('habit-note-modal').classList.add('open');
+  setTimeout(()=>{ const n=document.getElementById('hn-note'); if(n) n.focus(); }, 100);
+}
+
+function uncheckHabitDay() {
+  if(!habitNoteContext) return;
+  const {hid, key} = habitNoteContext;
+  if(!S.habitLog[hid]) S.habitLog[hid]={};
+  S.habitLog[hid][key] = false;
+  delete S.habitLog[hid][key+'_note'];
+  save();
+  closeHabitNoteModal();
+  renderHabitsPage();
+}
+
+function toggleHabitTodayWithNoteFromHabits(hid) {
+  if(!S.habitLog[hid]) S.habitLog[hid]={};
+  const today = todayKey();
+  if(S.habitLog[hid][today]) {
+    S.habitLog[hid][today] = false;
+    delete S.habitLog[hid][today+'_note'];
+    save(); renderHabitsPage(); return;
+  }
+  S.habitLog[hid][today] = true;
+  save(); renderHabitsPage();
+  openHabitNoteModal(hid, today);
+}
+
+function toggleHabitDayWithNote(hid, key) {
+  if(!S.habitLog[hid]) S.habitLog[hid]={};
+  if(S.habitLog[hid][key]) {
+    // Already checked - if it has a note, open modal to edit/clear
+    // If no note, just uncheck
+    if((S.habitLog[hid][key+'_note']||'').trim()) {
+      openHabitNoteModal(hid, key);
+      return;
+    }
+    S.habitLog[hid][key] = false;
+    delete S.habitLog[hid][key+'_note'];
+    save(); renderHabitsPage(); return;
+  }
+  S.habitLog[hid][key] = true;
+  save(); renderHabitsPage();
+  // Show note modal for any day - past or present
+  openHabitNoteModal(hid, key);
 }
 
 function saveHabitNote() {
   if(!habitNoteContext) { closeHabitNoteModal(); return; }
-  const {hid, key, onClose} = habitNoteContext;
+  const {hid, key} = habitNoteContext;
   const note = document.getElementById('hn-note').value.trim();
   if(!S.habitLog[hid]) S.habitLog[hid]={};
   if(note) S.habitLog[hid][key+'_note'] = note;
   else delete S.habitLog[hid][key+'_note'];
   save();
   closeHabitNoteModal();
-  if(onClose) onClose();
-  else { renderToday(); renderHabitsPage(); }
+  renderHabitsPage();
 }
 
 function buildMonthlyView(hid, year, month) {
@@ -3668,6 +3728,54 @@ function navHabitMonth(hid, year, month) {
   habitMonthView[hid] = {year, month};
   const el = document.getElementById('monthly-'+hid);
   if(el) el.innerHTML = buildMonthlyView(hid, year, month);
+}
+
+
+function toggleHabitNotes(hid) {
+  const el = document.getElementById('notes-history-'+hid);
+  if(!el) return;
+  if(el.style.display === 'none' || !el.style.display) {
+    el.innerHTML = buildHabitNotesHistory(hid);
+    el.style.display = 'block';
+  } else {
+    el.style.display = 'none';
+  }
+}
+
+function buildHabitNotesHistory(hid) {
+  const log = S.habitLog[hid] || {};
+  // Get all days that have notes
+  const noteEntries = Object.entries(log)
+    .filter(([k, v]) => k.endsWith('_note') && v && v.trim())
+    .map(([k, v]) => ({
+      date: k.replace('_note', ''),
+      note: v,
+      done: !!log[k.replace('_note', '')]
+    }))
+    .sort((a, b) => b.date.localeCompare(a.date));
+
+  if(!noteEntries.length) {
+    return '<div style="font-size:13px;color:var(--ink4);padding:10px 0;">No notes logged yet. Add notes when checking off this habit.</div>';
+  }
+
+  return '<div style="border-top:1px solid var(--border);padding-top:12px;">'
+    + '<div class="label" style="margin-bottom:10px;">Notes history ('+noteEntries.length+' entries)</div>'
+    + noteEntries.map(entry => {
+        const d = new Date(entry.date+'T12:00:00');
+        const dateStr = d.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric',year:'numeric'});
+        return '<div style="padding:10px 12px;background:var(--surface);border-radius:8px;margin-bottom:8px;border-left:3px solid var(--green);">'
+          + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">'
+          + '<span style="font-size:10px;color:var(--ink3);">'+dateStr+'</span>'
+          + '<button class="btn sm" data-hid="'+hid+'" data-date="'+entry.date+'" onclick="editHabitNote(this.dataset.hid,this.dataset.date)" style="font-size:10px;padding:3px 8px;">Edit</button>'
+          + '</div>'
+          + '<div style="font-size:13px;color:var(--ink2);line-height:1.6;">'+entry.note+'</div>'
+          + '</div>';
+      }).join('')
+    + '</div>';
+}
+
+function editHabitNote(hid, key) {
+  openHabitNoteModal(hid, key);
 }
 
 function toggleMonthlyView(hid) {
